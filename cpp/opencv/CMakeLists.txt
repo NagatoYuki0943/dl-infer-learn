@@ -18,19 +18,4 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 # 链接所有库，不指定cpp文件
 link_libraries(${OpenCV_LIBS})
 
-# ncnn
-set(NCNN_DIR D:/ml/ncnn/lib/cmake/ncnn)
-find_package(NCNN REQUIRED)
-if(NCNN_FOUND)
-    message("NCNN_FOUND!")
-endif()
-# ncnn include
-include_directories(D:/ml/ncnn/include)
-# ncnn lib
-link_directories(D:/ml/ncnn/lib)
-link_libraries(ncnn.lib)
-
-#vulkan
-include_directories(C:/VulkanSDK/Include)
-
 add_executable(main main.cpp)

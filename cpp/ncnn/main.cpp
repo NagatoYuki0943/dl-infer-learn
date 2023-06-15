@@ -6,13 +6,14 @@
 using namespace std;
 
 /**
+* https://github.com/Tencent/ncnn/wiki
 * https://github.com/Tencent/ncnn/wiki/use-ncnn-with-alexnet.zh
 */
 int main() {
-    string image_path = "../../../../cat.jpg";
-    string param_path = "../../../../shufflenet_v2_x0_5-sim-opt.param";
-    string model_path = "../../../../shufflenet_v2_x0_5-sim-opt.bin";
-    string classes_name_path = "../../../../imagenet_class_index.txt";
+    string image_path = "../../../../../cat.jpg";
+    string param_path = "../../../../../models/shufflenet_v2_x0_5-sim-opt.param";
+    string model_path = "../../../../../models/shufflenet_v2_x0_5-sim-opt.bin";
+    string classes_name_path = "../../../../../imagenet_class_index.txt";
 
     cv::Mat image = cv::imread(image_path);
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
@@ -20,23 +21,27 @@ int main() {
     /***************************** preprocess *****************************/
     // resize
     cv::resize(image, image, { 224, 224 });
-    // ×ª»»Îªfloat²¢¹éÒ»»¯
-    image.convertTo(image, CV_32FC3, 1.0 / 255, 0);
-    // ±ê×¼»¯
-    vector<float> mean = { 0.485, 0.456, 0.406 };
-    vector<float> std = { 0.229, 0.224, 0.225 };
-    cv::Scalar mean_scalar = cv::Scalar(mean[0], mean[1], mean[2]);
-    cv::Scalar std_scalar = cv::Scalar(std[0], std[1], std[2]);
-    cv::subtract(image, mean_scalar, image);
-    cv::divide(image, std_scalar, image);
+    // è¿™é‡Œä¹˜ä»¥255ç›¸å½“äºå½’ä¸€åŒ–å’Œæ ‡å‡†åŒ–åŒæ—¶è®¡ç®—
+    float mean[3] = { 0.485 * 255.0, 0.456 * 255.0, 0.406 * 255.0 };
+    // è¿™é‡Œç”¨å€’æ•°æ˜¯å› ä¸ºä½¿ç”¨çš„ç›¸ä¹˜,è€Œä¸æ˜¯è§¦å‘
+    float std[3] = { 1.0 / (0.229 * 255.0), 1.0 / (0.224 * 255.0), 1.0 / (0.225 * 255.0) };
+
+    // å°†cv::Matè½¬æ¢ä¸ºncnn::Matå†è®¡ç®—,è½¬æ¢æ—¶å¿…é¡»ä¸ºuint8ç±»å‹
+    ncnn::Mat in = ncnn::Mat::from_pixels(image.data, ncnn::Mat::PIXEL_RGB, image.size[0], image.size[1]);
+    in.substract_mean_normalize(mean, std);
     /***************************** preprocess *****************************/
 
     /******************************** ncnn ********************************/
     ncnn::Net net;
     net.load_param(param_path.c_str());
     net.load_model(model_path.c_str());
-    
-    // ÊäÈëÊä³öÃû×Ö
+
+    // net.opt.use_fp16_packed = false;
+    // net.opt.use_fp16_storage = false;
+    // net.opt.use_fp16_arithmetic = false;
+    // net.opt.use_bf16_storage = false;
+
+    // è¾“å…¥è¾“å‡ºåå­—
     vector<const char*> input_names = net.input_names();
     cout << "input numbers = " << input_names.size() << endl << "input name: ";
     for (auto name : input_names) {
@@ -44,31 +49,29 @@ int main() {
     };
     cout << endl;
     vector<const char*> output_names = net.output_names();
-    cout << "output numbers = " << output_names.size() << endl << "input name: ";
+    cout << "output numbers = " << output_names.size() << endl << "output name: ";
     for (auto name : output_names) {
         cout << name << " ";
     };
     cout << endl;
 
-    // ÍÆÀíÆ÷
+    // æ¨ç†å™¨
     ncnn::Extractor ex = net.create_extractor();
     // light mode
     ex.set_light_mode(true);
-    // ¶àÏß³Ì¼ÓËÙ
+    // å¤šçº¿ç¨‹åŠ é€Ÿ
     ex.set_num_threads(8);
 
-    // ÍÆÀí
-    ncnn::Mat in = ncnn::Mat::from_pixels(image.data, ncnn::Mat::PIXEL_RGB, image.size[0], image.size[1]);
+    // æ¨ç†
     ncnn::Mat out;
     ex.input(input_names[0], in);
     ex.extract(output_names[0], out);
-    // »ñÈ¡Êä³ö
+    // è·å–è¾“å‡º
     ncnn::Mat out_flatterned = out.reshape(out.w * out.h * out.c);
-
     /******************************** ncnn ********************************/
 
     /**************************** postprocess *****************************/
-    // ¿ÉÒÔ½«½á¹ûÈ¡³ö·ÅÈëvectorÖĞ
+    // å¯ä»¥å°†ç»“æœå–å‡ºæ”¾å…¥vectorä¸­
     std::vector<float> scores;
     scores.resize(out_flatterned.w);
     for (int j = 0; j < out_flatterned.w; j++)
@@ -76,8 +79,8 @@ int main() {
         scores[j] = out_flatterned[j];
     }
 
-    // ½«ncnn::Mat×ª»¯Îªcv::Mat
-    cv::Mat out_mat = cv::Mat(out_flatterned.w, out_flatterned.h, CV_32FC1, out_flatterned.data);
+    // å°†ncnn::Matè½¬åŒ–ä¸ºcv::Mat row=1000, cols=1
+    cv::Mat out_mat = cv::Mat(out_flatterned.w, out_flatterned.h, CV_32FC1, out_flatterned);
 
     // softmax
     double minValue, maxValue;
@@ -87,10 +90,9 @@ int main() {
     float sum = cv::sum(out_mat)[0];
     out_mat /= sum;
     cv::minMaxIdx(out_mat, &minValue, &maxValue, &minLoc, &maxLoc);
-
     /**************************** postprocess *****************************/
 
-    // ¶ÁÈ¡classes name
+    // è¯»å–classes name
     ifstream infile;
     infile.open(classes_name_path);
     string l;
@@ -99,9 +101,11 @@ int main() {
         classes.push_back(l);
     }
     infile.close();
-    // È·±£Ä£ĞÍÊä³ö³¤¶ÈºÍclasses³¤¶ÈÏàÍ¬
+    // ç¡®ä¿æ¨¡å‹è¾“å‡ºé•¿åº¦å’Œclassesé•¿åº¦ç›¸åŒ
     assert(classes.size() == out_mat.size[0]);
 
     cout << maxLoc << " => " << maxValue << " => " << classes[maxLoc] << endl;
+    // 285 => 0.374477 => Egyptian_cat
+
     return 0;
 }

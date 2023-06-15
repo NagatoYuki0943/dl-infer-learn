@@ -15,9 +15,6 @@ if(OpenCV_FOUND)
 endif()
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-# 链接所有库，不指定cpp文件
-link_libraries(${OpenCV_LIBS})
-
 # openvino
 set(OpenVINO_DIR D:/ml/w_openvino_toolkit_windows/runtime/cmake)
 find_package(OpenVINO REQUIRED)

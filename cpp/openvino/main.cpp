@@ -5,45 +5,43 @@
 
 using namespace std;
 
-
 /**
- * https://mp.weixin.qq.com/s/4lkDJC95at2tK_Zd62aJxw
- * https://blog.csdn.net/sandmangu/article/details/107181289
- * https://docs.openvino.ai/latest/openvino_2_0_preprocessing.html
- * 
- * input(0)/output(0) °´ÕÕidÕÒÖ¸¶¨µÄÊäÈëÊä³ö£¬²»Ö¸¶¨ÕÒÈ«²¿µÄÊäÈëÊä³ö
+ *  https://mp.weixin.qq.com/s/4lkDJC95at2tK_Zd62aJxw
+ *  https://blog.csdn.net/sandmangu/article/details/107181289
+ *  https://docs.openvino.ai/latest/openvino_2_0_preprocessing.html
  *
- *  input().tensor()       ÓĞ7¸ö·½·¨
+ *  input(0)/output(0) æŒ‰ç…§idæ‰¾æŒ‡å®šçš„è¾“å…¥è¾“å‡ºï¼Œä¸æŒ‡å®šæ‰¾å…¨éƒ¨çš„è¾“å…¥è¾“å‡º
+ *
+ *  input().tensor()       æœ‰7ä¸ªæ–¹æ³•
  *  ppp.input().tensor().set_color_format().set_element_type().set_layout()
  *                      .set_memory_type().set_shape().set_spatial_dynamic_shape().set_spatial_static_shape();
  *
- *  output().tensor()      ÓĞ2¸ö·½·¨
+ *  output().tensor()      æœ‰2ä¸ªæ–¹æ³•
  *  ppp.output().tensor().set_layout().set_element_type();
  *
- *  input().preprocess()   ÓĞ8¸ö·½·¨
+ *  input().preprocess()   æœ‰8ä¸ªæ–¹æ³•
  *  ppp.input().preprocess().convert_color().convert_element_type().mean().scale()
  *                          .convert_layout().reverse_channels().resize().custom();
  *
- *  output().postprocess() ÓĞ3¸ö·½·¨
+ *  output().postprocess() æœ‰3ä¸ªæ–¹æ³•
  *  ppp.output().postprocess().convert_element_type().convert_layout().custom();
  *
- *  input().model()  Ö»ÓĞ1¸ö·½·¨
+ *  input().model()  åªæœ‰1ä¸ªæ–¹æ³•
  *  ppp.input().model().set_layout();
  *
- *  output().model() Ö»ÓĞ1¸ö·½·¨
+ *  output().model() åªæœ‰1ä¸ªæ–¹æ³•
  *  ppp.output().model().set_layout();
  **/
 
-
 /**
-* 
+*
 */
 int main() {
-    string image_path = "../../../../cat.jpg";
-    string model_path = "../../../../shufflenet_v2_x0_5.xml";
-    string classes_name_path = "../../../../imagenet_class_index.txt";
-    string device = "CPU"; // CPU GPU
-    bool openvino_preprocess = false;
+    string image_path = "../../../../../cat.jpg";
+    string model_path = "../../../../../models/shufflenet_v2_x0_5.xml";
+    string classes_name_path = "../../../../../imagenet_class_index.txt";
+    string device = "CPU"; // CPU or GPU or GPU.0
+    bool openvino_preprocess = true;
 
     cv::Mat image = cv::imread(image_path);
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
@@ -53,21 +51,15 @@ int main() {
     cv::resize(image, image, { 224, 224 });
 
     if (!openvino_preprocess) {
-        // ×ª»»Îªfloat²¢¹éÒ»»¯
+        // è½¬æ¢ä¸ºfloatå¹¶å½’ä¸€åŒ–
         image.convertTo(image, CV_32FC3, 1.0 / 255, 0);
-        // ±ê×¼»¯
-        vector<float> mean = { 0.485, 0.456, 0.406 };
-        vector<float> std = { 0.229, 0.224, 0.225 };
-        cv::Scalar mean_scalar = cv::Scalar(mean[0], mean[1], mean[2]);
-        cv::Scalar std_scalar = cv::Scalar(std[0], std[1], std[2]);
+        // æ ‡å‡†åŒ–
+        cv::Scalar mean_scalar = cv::Scalar(0.485, 0.456, 0.406);
+        cv::Scalar std_scalar = cv::Scalar(0.229, 0.224, 0.225);
         cv::subtract(image, mean_scalar, image);
         cv::divide(image, std_scalar, image);
-        cout << image << endl;
         // [H, W, C] -> [N, C, H, W]
         image = cv::dnn::blobFromImage(image);
-    }
-    else {
-        image.convertTo(image, CV_32FC3, 1.0, 0);
     }
     /***************************** preprocess *****************************/
 
@@ -84,13 +76,13 @@ int main() {
         // Specify input image format
         ppp.input(0).tensor()
             .set_color_format(ov::preprocess::ColorFormat::RGB)     // BGR -> RGB
-            .set_element_type(ov::element::f32)                     // u8 -> f32
+            .set_element_type(ov::element::u8)
             .set_layout(ov::Layout("HWC"));                         // HWC NHWC NCHW
 
         // Specify preprocess pipeline to input image without resizing
         ppp.input(0).preprocess()
-            //  .convert_color(ov::preprocess::ColorFormat::RGB)
-            //  .convert_element_type(ov::element::f32)
+            // .convert_color(ov::preprocess::ColorFormat::RGB)
+            .convert_element_type(ov::element::f32)
             .mean(mean)
             .scale(std);
 
@@ -104,33 +96,36 @@ int main() {
         model = ppp.build();
     }
 
-    compiled_model = core.compile_model(model, device);                     // ±àÒëºÃµÄÄ£ĞÍ
-    ov::InferRequest infer_request = compiled_model.create_infer_request(); // ÍÆÀíÇëÇó
+    compiled_model = core.compile_model(model, device);                     // ç¼–è¯‘å¥½çš„æ¨¡å‹
+    ov::InferRequest infer_request = compiled_model.create_infer_request(); // æ¨ç†è¯·æ±‚
 
-    vector<ov::Output<const ov::Node>> inputs = compiled_model.inputs();    // Ä£ĞÍµÄÊäÈëÁĞ±íÃû³Æ
-    vector<ov::Output<const ov::Node>> outputs = compiled_model.outputs();  // Ä£ĞÍµÄÊä³öÁĞ±íÃû³Æ
+    vector<ov::Output<const ov::Node>> inputs = compiled_model.inputs();    // æ¨¡å‹çš„è¾“å…¥åˆ—è¡¨åç§°
+    vector<ov::Output<const ov::Node>> outputs = compiled_model.outputs();  // æ¨¡å‹çš„è¾“å‡ºåˆ—è¡¨åç§°
+
     // classes length
     int output_size = 1;
     for (auto i : outputs[0].get_shape()) {
         output_size *= i;
     }
 
-    // ´´½¨tensor
-    ov::Tensor input_tensor = ov::Tensor(compiled_model.input(0).get_element_type(),
-        compiled_model.input(0).get_shape(), (float*)image.data);
+    // åˆ›å»ºtensor
+    ov::Tensor input_tensor = ov::Tensor(
+        compiled_model.input(0).get_element_type(),
+        compiled_model.input(0).get_shape(),
+        (float*)image.data
+    );
 
-    // ÍÆÀí
+    // æ¨ç†
     infer_request.set_input_tensor(input_tensor);
     infer_request.infer();
 
-    // »ñÈ¡Êä³ö
+    // è·å–è¾“å‡º
     ov::Tensor result = infer_request.get_output_tensor(0);
     float* floatarr = result.data<float>();
-
     /****************************** openvino ******************************/
 
     /**************************** postprocess *****************************/
-    // ¿ÉÒÔ½«½á¹ûÈ¡³ö·ÅÈëvectorÖĞ
+    // å¯ä»¥å°†ç»“æœå–å‡ºæ”¾å…¥vectorä¸­
     std::vector<float> scores;
     scores.resize(output_size);
     for (int i = 0; i < output_size; i++)
@@ -138,7 +133,7 @@ int main() {
         scores[i] = floatarr[i];
     }
 
-    // ½«ncnn::Mat×ª»¯Îªcv::Mat
+    // å°†ncnn::Matè½¬åŒ–ä¸ºcv::Mat rows=1000, cols=1
     cv::Mat out_mat = cv::Mat(output_size, 1, CV_32FC1, floatarr);
 
     // softmax
@@ -149,10 +144,9 @@ int main() {
     float sum = cv::sum(out_mat)[0];
     out_mat /= sum;
     cv::minMaxIdx(out_mat, &minValue, &maxValue, &minLoc, &maxLoc);
-
     /**************************** postprocess *****************************/
 
-    // ¶ÁÈ¡classes name
+    // è¯»å–classes name
     ifstream infile;
     infile.open(classes_name_path);
     string l;
@@ -161,7 +155,7 @@ int main() {
         classes.push_back(l);
     }
     infile.close();
-    // È·±£Ä£ĞÍÊä³ö³¤¶ÈºÍclasses³¤¶ÈÏàÍ¬
+    // ç¡®ä¿æ¨¡å‹è¾“å‡ºé•¿åº¦å’Œclassesé•¿åº¦ç›¸åŒ
     assert(classes.size() == out_mat.size[0]);
 
     cout << maxLoc << " => " << maxValue << " => " << classes[maxLoc] << endl;

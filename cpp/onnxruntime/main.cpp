@@ -9,9 +9,9 @@ using namespace std;
 * https://github.com/microsoft/onnxruntime-inference-examples/tree/main/c_cxx
 */
 int main() {
-    string image_path = "../../../../cat.jpg";
-    string model_path = "../../../../shufflenet_v2_x0_5.onnx";
-    string classes_name_path = "../../../../imagenet_class_index.txt";
+    string image_path = "../../../../../cat.jpg";
+    string model_path = "../../../../../models/shufflenet_v2_x0_5.onnx";
+    string classes_name_path = "../../../../../imagenet_class_index.txt";
     int threads = 4;
     string device = "cuda";
     int gpu_mem_limit = 4;
@@ -22,9 +22,9 @@ int main() {
     /***************************** preprocess *****************************/
     // resize
     cv::resize(image, image, { 224, 224 });
-    // ×ª»»Îªfloat²¢¹éÒ»»¯
+    // è½¬æ¢ä¸ºfloatå¹¶å½’ä¸€åŒ–
     image.convertTo(image, CV_32FC3, 1.0 / 255, 0);
-    // ±ê×¼»¯
+    // æ ‡å‡†åŒ–
     vector<float> mean = { 0.485, 0.456, 0.406 };
     vector<float> std = { 0.229, 0.224, 0.225 };
     cv::Scalar mean_scalar = cv::Scalar(mean[0], mean[1], mean[2]);
@@ -37,20 +37,20 @@ int main() {
     /***************************** preprocess *****************************/
 
     /**************************** onnxruntime *****************************/
-    Ort::Env env{};                                         // Èı¸öort²ÎÊı
+    Ort::Env env{};                                         // ä¸‰ä¸ªortå‚æ•°
     Ort::AllocatorWithDefaultOptions allocator{};
     Ort::RunOptions runOptions{};
     Ort::Session session = Ort::Session(nullptr);           // onnxruntime session
-    size_t input_nums{};                                    // Ä£ĞÍÊäÈëÖµÊıÁ¿
-    size_t output_nums{};                                   // Ä£ĞÍÊä³öÖµÊıÁ¿
-    vector<const char*> input_node_names;                   // ÊäÈë½ÚµãÃû
-    vector<Ort::AllocatedStringPtr> input_node_names_ptr;   // ÊäÈë½ÚµãÃûÖ¸Õë,±£´æËü·ÀÖ¹ÊÍ·Å https://github.com/microsoft/onnxruntime/issues/13651
-    vector<vector<int64_t>> input_dims;                     // ÊäÈëĞÎ×´
-    vector<const char*> output_node_names;                  // Êä³ö½ÚµãÃû
-    vector<Ort::AllocatedStringPtr> output_node_names_ptr;  // ÊäÈë½ÚµãÃûÖ¸Õë
-    vector<vector<int64_t>> output_dims;                    // Êä³öĞÎ×´
+    size_t input_nums{};                                    // æ¨¡å‹è¾“å…¥å€¼æ•°é‡
+    size_t output_nums{};                                   // æ¨¡å‹è¾“å‡ºå€¼æ•°é‡
+    vector<const char*> input_node_names;                   // è¾“å…¥èŠ‚ç‚¹å
+    vector<Ort::AllocatedStringPtr> input_node_names_ptr;   // è¾“å…¥èŠ‚ç‚¹åæŒ‡é’ˆ,ä¿å­˜å®ƒé˜²æ­¢é‡Šæ”¾ https://github.com/microsoft/onnxruntime/issues/13651
+    vector<vector<int64_t>> input_dims;                     // è¾“å…¥å½¢çŠ¶
+    vector<const char*> output_node_names;                  // è¾“å‡ºèŠ‚ç‚¹å
+    vector<Ort::AllocatedStringPtr> output_node_names_ptr;  // è¾“å…¥èŠ‚ç‚¹åæŒ‡é’ˆ
+    vector<vector<int64_t>> output_dims;                    // è¾“å‡ºå½¢çŠ¶
 
-    // »ñÈ¡¿ÉÓÃµÄprovider
+    // è·å–å¯ç”¨çš„provider
     auto availableProviders = Ort::GetAvailableProviders();
     for (const auto& provider : availableProviders) {
         cout << provider << " ";
@@ -59,10 +59,10 @@ int main() {
 
     /********************* load onnx *********************/
     Ort::SessionOptions sessionOptions;
-    // Ê¹ÓÃ0¸öÏß³ÌÖ´ĞĞop,ÈôÏëÌáÉıËÙ¶È£¬Ôö¼ÓÏß³ÌÊı
+    // ä½¿ç”¨0ä¸ªçº¿ç¨‹æ‰§è¡Œop,è‹¥æƒ³æå‡é€Ÿåº¦ï¼Œå¢åŠ çº¿ç¨‹æ•°
     sessionOptions.SetIntraOpNumThreads(threads);
     sessionOptions.SetInterOpNumThreads(threads);
-    // ORT_ENABLE_ALL: ÆôÓÃËùÓĞ¿ÉÄÜµÄÓÅ»¯
+    // ORT_ENABLE_ALL: å¯ç”¨æ‰€æœ‰å¯èƒ½çš„ä¼˜åŒ–
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
     if (device == "cuda" || device == "tensorrt") {
         // https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
@@ -96,26 +96,26 @@ int main() {
     printf("Number of inputs = %zu\n", input_nums); // Number of inputs = 1
     printf("Number of output = %zu\n", output_nums);// Number of output = 1
 
-    // »ñÈ¡ÊäÈëÊä³öname
-    // »ñÈ¡Î¬¶ÈÊıÁ¿
+    // è·å–è¾“å…¥è¾“å‡ºname
+    // è·å–ç»´åº¦æ•°é‡
     for (int i = 0; i < input_nums; i++) {
-        // ÊäÈë±äÁ¿Ãû
+        // è¾“å…¥å˜é‡å
         Ort::AllocatedStringPtr input_name = session.GetInputNameAllocated(i, allocator);
         input_node_names.push_back(input_name.get());
         input_node_names_ptr.push_back(move(input_name));
 
-        // ÊäÈëĞÎ×´
+        // è¾“å…¥å½¢çŠ¶
         auto input_shape_info = session.GetInputTypeInfo(i).GetTensorTypeAndShapeInfo();
         input_dims.push_back(input_shape_info.GetShape());
     }
 
     for (int i = 0; i < output_nums; i++) {
-        // Êä³ö±äÁ¿Ãû
+        // è¾“å‡ºå˜é‡å
         Ort::AllocatedStringPtr output_name = session.GetOutputNameAllocated(i, allocator);
         output_node_names.push_back(output_name.get());
         output_node_names_ptr.push_back(move(output_name));
 
-        // Êä³öĞÎ×´
+        // è¾“å‡ºå½¢çŠ¶
         auto output_shape_info = session.GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo();
         output_dims.push_back(output_shape_info.GetShape());
     }
@@ -143,11 +143,11 @@ int main() {
     }
     /********************* onnx info *********************/
 
-    // ÉêÇëÄÚ´æ¿Õ¼ä
+    // ç”³è¯·å†…å­˜ç©ºé—´
     auto memory_info = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU);
-    // ´´½¨ÊäÈëtensor
+    // åˆ›å»ºè¾“å…¥tensor
     Ort::Value input_tensor = Ort::Value::CreateTensor<float>(memory_info, image.ptr<float>(), image.total(), input_dims[0].data(), input_dims[0].size());
-    // ÍÆÀí Ö»´«µİÊäÈë
+    // æ¨ç† åªä¼ é€’è¾“å…¥
     vector<Ort::Value> output_tensors;
     try {
         output_tensors = session.Run(
@@ -163,12 +163,12 @@ int main() {
         cout << e.what() << endl;
     }
 
-    // »ñÈ¡Êä³ö
+    // è·å–è¾“å‡º
     float* floatarr = output_tensors[0].GetTensorMutableData<float>();
     /**************************** onnxruntime *****************************/
 
     /**************************** postprocess *****************************/
-    // ¿ÉÒÔ½«½á¹ûÈ¡³ö·ÅÈëvectorÖĞ
+    // å¯ä»¥å°†ç»“æœå–å‡ºæ”¾å…¥vectorä¸­
     std::vector<float> scores;
     scores.resize(output_size);
     for (int i = 0; i < output_size; i++)
@@ -176,7 +176,7 @@ int main() {
         scores[i] = floatarr[i];
     }
 
-    // float*×ª»¯Îªcv::Mat
+    // float*è½¬åŒ–ä¸ºcv::Mat rows=1000, cols=1
     cv::Mat out_mat = cv::Mat(output_size, 1, CV_32FC1, floatarr);
     // softmax
     double minValue, maxValue;
@@ -186,10 +186,9 @@ int main() {
     float sum = cv::sum(out_mat)[0];
     out_mat /= sum;
     cv::minMaxIdx(out_mat, &minValue, &maxValue, &minLoc, &maxLoc);
+    /**************************** postprocess *****************************/
 
-    ///**************************** postprocess *****************************/
-
-    // ¶ÁÈ¡classes name
+    // è¯»å–classes name
     ifstream infile;
     infile.open(classes_name_path);
     string l;
@@ -198,7 +197,7 @@ int main() {
         classes.push_back(l);
     }
     infile.close();
-    // È·±£Ä£ĞÍÊä³ö³¤¶ÈºÍclasses³¤¶ÈÏàÍ¬
+    // ç¡®ä¿æ¨¡å‹è¾“å‡ºé•¿åº¦å’Œclassesé•¿åº¦ç›¸åŒ
     assert(classes.size() == out_mat.size[0]);
 
     cout << maxLoc << " => " << maxValue << " => " << classes[maxLoc] << endl;

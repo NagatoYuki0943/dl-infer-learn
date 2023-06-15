@@ -15,13 +15,22 @@ if(OpenCV_FOUND)
 endif()
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-# 链接所有库，不指定cpp文件
-link_libraries(${OpenCV_LIBS})
+# ncnn
+set(NCNN_DIR D:/ml/ncnn/lib/cmake/ncnn)
+find_package(NCNN REQUIRED)
+if(NCNN_FOUND)
+    message("NCNN_FOUND!")
+endif()
+# ncnn include
+include_directories(D:/ml/ncnn/include)
+# ncnn lib
+link_directories(D:/ml/ncnn/lib)
 
-# onnxruntime include
-include_directories(D:/ml/onnxruntime/include)
-# onnxruntime lib
-link_directories(D:/ml/onnxruntime/lib)
-link_libraries(onnxruntime.lib onnxruntime_providers_cuda.lib onnxruntime_providers_shared.lib onnxruntime_providers_tensorrt.lib)
+# 链接所有库，不指定cpp文件
+link_libraries(${OpenCV_LIBS}
+                ncnn.lib)
+
+#vulkan
+include_directories(C:/VulkanSDK/Include)
 
 add_executable(main main.cpp)
