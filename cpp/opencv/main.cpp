@@ -50,12 +50,12 @@ int main() {
 
     // softmax
     double minValue, maxValue;
-    int minLoc, maxLoc;
-    cv::minMaxIdx(out_mat, &minValue, &maxValue, &minLoc, &maxLoc);
+    cv::Point minLoc, maxLoc;
+    cv::minMaxLoc(out_mat, &minValue, &maxValue, &minLoc, &maxLoc);
     cv::exp((out_mat - maxValue), out_mat);
     float sum = cv::sum(out_mat)[0];
     out_mat /= sum;
-    cv::minMaxIdx(out_mat, &minValue, &maxValue, &minLoc, &maxLoc);
+    cv::minMaxLoc(out_mat, &minValue, &maxValue, &minLoc, &maxLoc);
     /**************************** postprocess *****************************/
 
     // 读取classes name
@@ -70,7 +70,7 @@ int main() {
     // 确保模型输出长度和classes长度相同
     assert(classes.size() == out_mat.size[0]);
 
-    cout << maxLoc << " => " << maxValue << " => " << classes[maxLoc] << endl;
+    cout << maxLoc << " => " << maxValue << " => " << classes[maxLoc.y] << endl;
     // 285 => 0.374837 => Egyptian_cat
 
     return 0;
