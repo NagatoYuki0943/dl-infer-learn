@@ -3,9 +3,6 @@ project(cpp)
 
 set(CMAKE_CXX_STANDARD 14)
 
-# rapidjson 为相对目录,可以更改为绝对目录
-include_directories(include)
-
 # opencv
 set(OpenCV_DIR D:/ml/opencv/build)
 find_package(OpenCV REQUIRED)
