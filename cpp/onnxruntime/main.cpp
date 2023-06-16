@@ -2,8 +2,69 @@
 #include <onnxruntime_cxx_api.h>
 #include <iostream>
 #include <fstream>
+#include <math.h>
 
 using namespace std;
+
+cv::Mat opencvSoftmax(cv::Mat& mat) {
+    double minValue, maxValue;
+    cv::Point minLoc, maxLoc;
+    cv::minMaxLoc(mat, &minValue, &maxValue, &minLoc, &maxLoc);
+    cv::exp((mat - maxValue), mat);
+    float sum = cv::sum(mat)[0];
+    mat /= sum;
+    return mat;
+}
+
+vector<float> vectorSoftmax(vector<float>& scores) {
+    float maxValue = *max_element(scores.begin(), scores.end());
+
+    // 减去最大值并求指数
+    float temp;
+    float sum = 0.0f;
+    vector<float> results;
+    results.resize(scores.size());
+    for (int i = 0; i < scores.size(); i++) {
+        temp = exp(scores[i] - maxValue);
+        sum += temp;
+        results[i] = temp;
+    }
+
+    // 除以总和
+    for (int i = 0; i < scores.size(); i++) {
+        results[i] /= sum;
+    }
+    return results;
+}
+
+/**
+* https://github.com/Tencent/ncnn/blob/master/examples/squeezenet.cpp#LL60C41-L60C41
+*/
+static int print_topk(const vector<float>& cls_scores, const vector<string>& cls_names, int topk)
+{
+    // partial sort topk with index
+    int size = cls_scores.size();
+    vector<pair<float, int> > vec;
+    vec.resize(size);
+    for (int i = 0; i < size; i++)
+    {
+        vec[i] = make_pair(cls_scores[i], i);
+    }
+
+    partial_sort(vec.begin(), vec.begin() + topk, vec.end(),
+        greater<pair<float, int> >());
+
+    // print topk and score
+    for (int i = 0; i < topk; i++)
+    {
+        float score = vec[i].first;
+        int index = vec[i].second;
+        string name = cls_names[index];
+        fprintf(stderr, "%d = %f => %s\n", index, score, name);
+    }
+
+    return 0;
+}
 
 /**
 * https://github.com/microsoft/onnxruntime-inference-examples/tree/main/c_cxx
@@ -172,17 +233,13 @@ int main() {
     for (int i = 0; i < output_size; i++) {
         scores[i] = floatarr[i];
     }
+    // vector softmax
+    scores = vectorSoftmax(scores);
 
     // float*转化为cv::Mat rows=1000, cols=1
     cv::Mat out_mat = cv::Mat(output_size, 1, CV_32FC1, floatarr);
-    // softmax
-    double minValue, maxValue;
-    cv::Point minLoc, maxLoc;
-    cv::minMaxLoc(out_mat, &minValue, &maxValue, &minLoc, &maxLoc);
-    cv::exp((out_mat - maxValue), out_mat);
-    float sum = cv::sum(out_mat)[0];
-    out_mat /= sum;
-    cv::minMaxLoc(out_mat, &minValue, &maxValue, &minLoc, &maxLoc);
+    // opencv softmax
+    // out_mat = opencvSoftmax(out_mat);
     /**************************** postprocess *****************************/
 
     // 读取classes name
@@ -197,8 +254,8 @@ int main() {
     // 确保模型输出长度和classes长度相同
     assert(classes.size() == out_mat.size[0]);
 
-    cout << maxLoc.y << " => " << maxValue << " => " << classes[maxLoc.y] << endl;
-    // 285 => 0.374836 => Egyptian_cat
+    // 打印topk
+    print_topk(scores, classes, 5);
 
     return 0;
 }
