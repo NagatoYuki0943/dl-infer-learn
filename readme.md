@@ -36,6 +36,16 @@
 >
 > [c++推理](cpp/opencv)
 
+> https://github.com/NVIDIA/TensorRT/blob/main/quickstart/SemanticSegmentation/tutorial-runtime.ipynb
+>
+> https://github.com/NVIDIA/TensorRT/tree/main/samples/python/efficientnet
+>
+> https://github.com/NVIDIA/TensorRT/tree/main/samples/python/efficientdet
+>
+> 
+>
+> https://github.com/NVIDIA/TensorRT/blob/main/quickstart/SemanticSegmentation/tutorial-runtime.cpp
+
 # [ncnn](https://github.com/Tencent/ncnn)
 
 > [python 推理](python/ncnn.ipynb)

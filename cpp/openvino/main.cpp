@@ -52,10 +52,10 @@ int main() {
 
     if (!openvino_preprocess) {
         // 转换为float并归一化
-        image.convertTo(image, CV_32FC3, 1.0 / 255, 0);
+        image.convertTo(image, CV_32FC3, 1.0f / 255.0f, 0);
         // 标准化
-        cv::Scalar mean_scalar = cv::Scalar(0.485, 0.456, 0.406);
-        cv::Scalar std_scalar = cv::Scalar(0.229, 0.224, 0.225);
+        cv::Scalar mean_scalar = cv::Scalar(0.485f, 0.456f, 0.406f);
+        cv::Scalar std_scalar = cv::Scalar(0.229f, 0.224f, 0.225f);
         cv::subtract(image, mean_scalar, image);
         cv::divide(image, std_scalar, image);
         // [H, W, C] -> [N, C, H, W]
@@ -68,8 +68,8 @@ int main() {
     std::shared_ptr<ov::Model> model = core.read_model(model_path);
     ov::CompiledModel compiled_model;
     if (openvino_preprocess) {
-        vector<float> mean = { 0.485 * 255, 0.456 * 255, 0.406 * 255 };
-        vector<float> std = { 0.229 * 255, 0.224 * 255, 0.225 * 255 };
+        vector<float> mean = { 0.485f * 255.0f, 0.456f * 255.0f, 0.406f * 255.0f };
+        vector<float> std = { 0.229f * 255.0f, 0.224f * 255.0f, 0.225f * 255.0f };
 
         ov::preprocess::PrePostProcessor ppp = ov::preprocess::PrePostProcessor(model);
 
@@ -158,7 +158,7 @@ int main() {
     // 确保模型输出长度和classes长度相同
     assert(classes.size() == out_mat.size[0]);
 
-    cout << maxLoc << " => " << maxValue << " => " << classes[maxLoc.y] << endl;
+    cout << maxLoc.y << " => " << maxValue << " => " << classes[maxLoc.y] << endl;
     // 285 => 0.374836 => Egyptian_cat
 
     return 0;

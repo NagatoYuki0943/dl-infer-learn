@@ -22,9 +22,9 @@ int main() {
     // resize
     cv::resize(image, image, { 224, 224 });
     // 这里乘以255相当于归一化和标准化同时计算
-    float mean[3] = { 0.485 * 255.0, 0.456 * 255.0, 0.406 * 255.0 };
+    float mean[3] = { 0.485f * 255.0f, 0.456f * 255.0f, 0.406f * 255.0f };
     // 这里用倒数是因为使用的相乘,而不是触发
-    float std[3] = { 1.0 / (0.229 * 255.0), 1.0 / (0.224 * 255.0), 1.0 / (0.225 * 255.0) };
+    float std[3] = { 1.0f / (0.229f * 255.0f), 1.0f / (0.224f * 255.0f), 1.0f / (0.225f * 255.0f) };
 
     // 将cv::Mat转换为ncnn::Mat再计算,转换时必须为uint8类型
     ncnn::Mat in = ncnn::Mat::from_pixels(image.data, ncnn::Mat::PIXEL_RGB, image.size[0], image.size[1]);
@@ -104,7 +104,7 @@ int main() {
     // 确保模型输出长度和classes长度相同
     assert(classes.size() == out_mat.size[0]);
 
-    cout << maxLoc << " => " << maxValue << " => " << classes[maxLoc.y] << endl;
+    cout << maxLoc.y << " => " << maxValue << " => " << classes[maxLoc.y] << endl;
     // 285 => 0.374477 => Egyptian_cat
 
     return 0;

@@ -18,12 +18,11 @@ int main() {
     /***************************** preprocess *****************************/
     // resize
     cv::resize(image, image, { 224, 224 });
-
     // 转换为float并归一化
-    image.convertTo(image, CV_32FC3, 1.0 / 255, 0);
+    image.convertTo(image, CV_32FC3, 1.0f / 255.0f, 0);
     // 标准化
-    cv::Scalar mean_scalar = cv::Scalar(0.485, 0.456, 0.406);
-    cv::Scalar std_scalar = cv::Scalar(0.229, 0.224, 0.225);
+    cv::Scalar mean_scalar = cv::Scalar(0.485f, 0.456f, 0.406f);
+    cv::Scalar std_scalar = cv::Scalar(0.229f, 0.224f, 0.225f);
     cv::subtract(image, mean_scalar, image);
     cv::divide(image, std_scalar, image);
     // [H, W, C] -> [N, C, H, W]
@@ -70,7 +69,7 @@ int main() {
     // 确保模型输出长度和classes长度相同
     assert(classes.size() == out_mat.size[0]);
 
-    cout << maxLoc << " => " << maxValue << " => " << classes[maxLoc.y] << endl;
+    cout << maxLoc.y << " => " << maxValue << " => " << classes[maxLoc.y] << endl;
     // 285 => 0.374837 => Egyptian_cat
 
     return 0;
