@@ -55,7 +55,7 @@ int main() {
     };
     cout << endl;
 
-    // 推理器
+    // 推理器 每次都重新实例化一个extractor
     ncnn::Extractor ex = net.create_extractor();
     // light mode
     ex.set_light_mode(true);
@@ -74,8 +74,7 @@ int main() {
     // 可以将结果取出放入vector中
     std::vector<float> scores;
     scores.resize(out_flatterned.w);
-    for (int j = 0; j < out_flatterned.w; j++)
-    {
+    for (int j = 0; j < out_flatterned.w; j++) {
         scores[j] = out_flatterned[j];
     }
 

@@ -54,8 +54,7 @@ int main() {
     // 可以将结果取出放入vector中
     std::vector<float> scores;
     scores.resize(output_size);
-    for (int i = 0; i < output_size; i++)
-    {
+    for (int i = 0; i < output_size; i++) {
         scores[i] = out_mat.at<float>(i, 0); // at(h, w)
     }
 
