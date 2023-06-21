@@ -3,8 +3,9 @@ project(cpp)
 
 set(CMAKE_CXX_STANDARD 14)
 
-# opencv
 set(OpenCV_DIR D:/ml/opencv/build)
+
+# opencv
 find_package(OpenCV REQUIRED)
 if(OpenCV_FOUND)
     message("OpenCV_INCLUDE_DIRS: " ${OpenCV_INCLUDE_DIRS})

@@ -3,8 +3,10 @@ project(cpp)
 
 set(CMAKE_CXX_STANDARD 14)
 
-# opencv
 set(OpenCV_DIR D:/ml/opencv/build)
+set(OpenVINO_DIR D:/ml/w_openvino_toolkit_windows/runtime/cmake)
+
+# opencv
 find_package(OpenCV REQUIRED)
 if(OpenCV_FOUND)
     message("OpenCV_INCLUDE_DIRS: " ${OpenCV_INCLUDE_DIRS})
@@ -13,9 +15,8 @@ endif()
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 # openvino
-set(OpenVINO_DIR D:/ml/w_openvino_toolkit_windows/runtime/cmake)
 find_package(OpenVINO REQUIRED)
-include_directories(D:/ml/w_openvino_toolkit_windows/runtime/include)
+include_directories(openvino::include_directories)
 
 # 链接所有库，不指定cpp文件
 link_libraries(${OpenCV_LIBS}

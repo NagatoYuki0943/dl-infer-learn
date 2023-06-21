@@ -3,8 +3,10 @@ project(cpp)
 
 set(CMAKE_CXX_STANDARD 14)
 
-# opencv
 set(OpenCV_DIR D:/ml/opencv/build)
+set(ONNXRuntime_DIR D:/ml/onnxruntime)
+
+# opencv
 find_package(OpenCV REQUIRED)
 if(OpenCV_FOUND)
     message("OpenCV_INCLUDE_DIRS: " ${OpenCV_INCLUDE_DIRS})
@@ -13,9 +15,9 @@ endif()
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 # onnxruntime include
-include_directories(D:/ml/onnxruntime/include)
+include_directories(${ONNXRuntime_DIR}/include)
 # onnxruntime lib
-link_directories(D:/ml/onnxruntime/lib)
+link_directories(${ONNXRuntime_DIR}/lib)
 
 # 链接所有库，不指定cpp文件
 link_libraries(${OpenCV_LIBS}

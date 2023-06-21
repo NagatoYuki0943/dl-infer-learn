@@ -3,8 +3,11 @@ project(cpp)
 
 set(CMAKE_CXX_STANDARD 14)
 
-# opencv
 set(OpenCV_DIR D:/ml/opencv/build)
+set(NCNN_DIR D:/ml/ncnn/lib/cmake/ncnn)
+set(Vulkan_DIR C:/VulkanSDK)
+
+# opencv
 find_package(OpenCV REQUIRED)
 if(OpenCV_FOUND)
     message("OpenCV_INCLUDE_DIRS: " ${OpenCV_INCLUDE_DIRS})
@@ -13,7 +16,6 @@ endif()
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 # ncnn
-set(NCNN_DIR D:/ml/ncnn/lib/cmake/ncnn)
 find_package(NCNN REQUIRED)
 if(NCNN_FOUND)
     message("NCNN_FOUND!")
@@ -28,6 +30,6 @@ link_libraries(${OpenCV_LIBS}
                 ncnn.lib)
 
 #vulkan
-include_directories(C:/VulkanSDK/Include)
+include_directories(${Vulkan_DIR}/Include)
 
 add_executable(main main.cpp)

@@ -21,8 +21,7 @@ vector<float> vectorSoftmax(vector<float>& scores) {
     // 减去最大值并求指数
     float temp;
     float sum = 0.0f;
-    vector<float> results;
-    results.resize(scores.size());
+    vector<float> results(scores.size());
     for (int i = 0; i < scores.size(); i++) {
         temp = exp(scores[i] - maxValue);
         sum += temp;
@@ -30,8 +29,8 @@ vector<float> vectorSoftmax(vector<float>& scores) {
     }
 
     // 除以总和
-    for (int i = 0; i < scores.size(); i++) {
-        results[i] /= sum;
+    for (auto& result: results) {
+        result /= sum;
     }
     return results;
 }
@@ -91,23 +90,26 @@ int main() {
     /***************************** preprocess *****************************/
 
     /******************************** dnn *********************************/
+    // 载入模型
     cv::dnn::Net model = cv::dnn::readNetFromONNX(model_path);
+
+    // 推理
     model.setInput(image);
     cv::Mat out_mat = model.forward();
     /******************************** dnn *********************************/
 
     /**************************** postprocess *****************************/
     int output_size = out_mat.size().height * out_mat.size().width * out_mat.channels();
-    out_mat = out_mat.reshape(0, out_mat.size().width); // rows=1 -> 1000, cols=1000->1
     // 可以将结果取出放入vector中
     std::vector<float> scores;
     scores.resize(output_size);
     for (int i = 0; i < output_size; i++) {
-        scores[i] = out_mat.at<float>(i, 0); // at(h, w)
+        scores[i] = out_mat.at<float>(0, i); // at(h, w)
     }
     // vector softmax
     scores = vectorSoftmax(scores);
 
+    out_mat = out_mat.reshape(0, out_mat.size().width); // rows=1 -> 1000, cols=1000->1
     // opencv softmax
     // out_mat = opencvSoftmax(out_mat);
     /**************************** postprocess *****************************/

@@ -22,8 +22,7 @@ vector<float> vectorSoftmax(vector<float>& scores) {
     // 减去最大值并求指数
     float temp;
     float sum = 0.0f;
-    vector<float> results;
-    results.resize(scores.size());
+    vector<float> results(scores.size());
     for (int i = 0; i < scores.size(); i++) {
         temp = exp(scores[i] - maxValue);
         sum += temp;
@@ -31,8 +30,8 @@ vector<float> vectorSoftmax(vector<float>& scores) {
     }
 
     // 除以总和
-    for (int i = 0; i < scores.size(); i++) {
-        results[i] /= sum;
+    for (auto& result: results) {
+        result /= sum;
     }
     return results;
 }
