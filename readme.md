@@ -8,9 +8,9 @@
 
 # [ONNX Runtime](https://onnxruntime.ai/)
 
-> [python 推理](python/opencv.ipynb)
+> [python 推理](python/onnxruntime.ipynb)
 >
-> [c++推理](cpp/opencv)
+> [c++推理](cpp/onnxruntime)
 
 > https://github.com/microsoft/onnxruntime-inference-examples/tree/main/c_cxx
 
@@ -28,13 +28,11 @@
 
 # [TensorRT](https://developer.nvidia.com/zh-cn/tensorrt)
 
-> [tensorrt.md](tensorrt.md)
->
 > [trtexec导出和python 推理](python/tensorrt.ipynb)
 >
 > [代码导出](python/engine_export.py)
 >
-> [c++推理](cpp/opencv)
+> [c++推理](cpp/tensorrt)
 
 > https://github.com/NVIDIA/TensorRT/blob/main/quickstart/SemanticSegmentation/tutorial-runtime.ipynb
 >
