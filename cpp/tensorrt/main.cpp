@@ -66,7 +66,8 @@ static int print_topk(const vector<float>& cls_scores, const vector<string>& cls
         float score = vec[i].first;
         int index = vec[i].second;
         string name = cls_names[index];
-        fprintf(stderr, "%d = %f => %s\n", index, score, name);
+        cout << index << " = " << score << " => " << name << endl;
+        // fprintf(stderr, "%d = %f => %s\n", index, score, name);
     }
 
     return 0;
@@ -157,6 +158,7 @@ int main() {
     for (int i = 0; i < nbBindings; i++) {
         string name = engine->getIOTensorName(i);
         nvinfer1::TensorIOMode mode = engine->getTensorIOMode(name.c_str());
+        cout << "mode: " << int(mode) << endl; // 0:input or output  1:input  2:output
         nvinfer1::DataType dtype = engine->getTensorDataType(name.c_str());
         nvinfer1::Dims dims = engine->getTensorShape(name.c_str());
         int totalSize = volume(dims) * getElementSize(dtype);
