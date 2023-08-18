@@ -72,9 +72,10 @@ static int print_topk(const vector<float>& cls_scores, const vector<string>& cls
 */
 int main() {
     string image_path = "../../../../../cat.jpg";
+    string classes_name_path = "../../../../../imagenet_class_index.txt";
+
     string param_path = "../../../../../models/shufflenet_v2_x0_5-sim-opt.param";
     string model_path = "../../../../../models/shufflenet_v2_x0_5-sim-opt.bin";
-    string classes_name_path = "../../../../../imagenet_class_index.txt";
 
     cv::Mat image = cv::imread(image_path);
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);

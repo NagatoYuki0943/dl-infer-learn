@@ -100,9 +100,20 @@ inline unsigned int getElementSize(nvinfer1::DataType t)
 */
 int main() {
     string image_path = "../../../../../cat.jpg";
-    string model_path = "../../../../../models/shufflenet_v2_x0_5.engine";
     string classes_name_path = "../../../../../imagenet_class_index.txt";
+    string model_path;
 
+    // 支持dynamic batch infer,需要注意batch为几,就要输入几张图片,这个和python版本不同,python可以输入比batch少的图片数量
+    bool dynamic_batch = true;
+    // dynamic batch requires explicit specification of batch
+    int batches = 4;
+    if (dynamic_batch) {
+        model_path = "../../../../../models/shufflenet_v2_x0_5_dynamic_batch.engine";
+    }
+    else {
+        model_path = "../../../../../models/shufflenet_v2_x0_5.engine";
+    }
+    
     cv::Mat image = cv::imread(image_path);
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
 
@@ -117,7 +128,17 @@ int main() {
     cv::subtract(image, mean_scalar, image);
     cv::divide(image, std_scalar, image);
     // [H, W, C] -> [N, C, H, W]
-    image = cv::dnn::blobFromImage(image);
+
+    if (dynamic_batch) {
+        // 初始化batches张图片
+        vector<cv::Mat> images = vector<cv::Mat>(batches, image);
+        image = cv::dnn::blobFromImages(cv::InputArrayOfArrays(images));
+    }
+    else {
+        image = cv::dnn::blobFromImage(image);
+    }
+    
+    
     /***************************** preprocess *****************************/
 
     /******************************* engine *******************************/
@@ -157,11 +178,24 @@ int main() {
     void* cudaBuffers[2];
     for (int i = 0; i < nbBindings; i++) {
         string name = engine->getIOTensorName(i);
-        nvinfer1::TensorIOMode mode = engine->getTensorIOMode(name.c_str());
-        cout << "mode: " << int(mode) << endl; // 0:input or output  1:input  2:output
+        int mode = int(engine->getTensorIOMode(name.c_str()));
+        cout << "mode: " << mode << endl; // 0:input or output  1:input  2:output
         nvinfer1::DataType dtype = engine->getTensorDataType(name.c_str());
-        nvinfer1::Dims dims = engine->getTensorShape(name.c_str());
+        nvinfer1::Dims dims = context->getTensorShape(name.c_str());
+
+        // dynamic batch
+        if ((*dims.d == -1) && (mode == 1)) {
+            nvinfer1::Dims minDims = engine->getProfileShape(name.c_str(), 0, nvinfer1::OptProfileSelector::kMIN);
+            nvinfer1::Dims optDims = engine->getProfileShape(name.c_str(), 0, nvinfer1::OptProfileSelector::kOPT);
+            nvinfer1::Dims maxDims = engine->getProfileShape(name.c_str(), 0, nvinfer1::OptProfileSelector::kMAX);
+            // 自己设置的batch必须在最小和最大batch之间
+            assert(batches >= minDims.d[0] && batches <= maxDims.d[0]);
+            // 显式设置batch
+            context->setInputShape(name.c_str(), nvinfer1::Dims4(batches, maxDims.d[1], maxDims.d[2], maxDims.d[3]));
+            dims = context->getTensorShape(name.c_str());
+        }
         int totalSize = volume(dims) * getElementSize(dtype);
+        cout << "totalSize: " << totalSize << endl;
         bufferSize[i] = totalSize;
         cudaMalloc(&cudaBuffers[i], totalSize);
     }
@@ -173,14 +207,15 @@ int main() {
     cudaStreamCreate(&stream);
     // float长度
     int outSize = int(bufferSize[1] / sizeof(float));
+    cout << "outSize: " << outSize << endl;
     float* output = new float[outSize];
 
     // DMA the input to the GPU,  execute the batch asynchronously, and DMA it back:
-    cudaMemcpy(cudaBuffers[0], image.ptr<float>(), bufferSize[0], cudaMemcpyHostToDevice);
+    cudaMemcpy(cudaBuffers[0], image.ptr<float>(), 224*224*3*4, cudaMemcpyHostToDevice);
     // cudaMemcpyAsync(cudaBuffers[0], image.ptr<float>(), bufferSize[0], cudaMemcpyHostToDevice, stream);  // 异步没有把数据移动上去,很奇怪
     // do inference
     context->executeV2(cudaBuffers);
-    cudaMemcpy(output, cudaBuffers[1], bufferSize[1], cudaMemcpyDeviceToHost);
+    cudaMemcpy(output, cudaBuffers[1], 1000*4, cudaMemcpyDeviceToHost);
     // cudaMemcpyAsync(output, cudaBuffers[1], bufferSize[1], cudaMemcpyDeviceToHost, stream);
     cudaStreamSynchronize(stream);
     /*********************** infer ***********************/
@@ -198,6 +233,12 @@ int main() {
     scores = vectorSoftmax(scores);
     /**************************** postprocess *****************************/
 
+    // 只获取第一张图片的结果
+    int batch1ResultLength = outSize;
+    if (dynamic_batch) {
+        batch1ResultLength = outSize / batches;
+    }
+
     // 读取classes name
     ifstream infile;
     infile.open(classes_name_path);
@@ -208,10 +249,16 @@ int main() {
     }
     infile.close();
     // 确保模型输出长度和classes长度相同
-    assert(classes.size() == outSize);
+    assert(classes.size() == batch1ResultLength);
+
+    // 获取第一张图片的分数
+    std::vector<float> batch1Scores(batch1ResultLength);
+    for (size_t i = 0; i < batch1ResultLength; i++) {
+        batch1Scores[i] = scores[i];
+    };
 
     // 打印topk
-    print_topk(scores, classes, 5);
+    print_topk(batch1Scores, classes, 5);
 
     // 析构顺序很重要
     context->destroy();
