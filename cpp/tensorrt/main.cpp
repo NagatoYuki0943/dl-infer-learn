@@ -213,5 +213,10 @@ int main() {
     // 打印topk
     print_topk(scores, classes, 5);
 
+    // 析构顺序很重要
+    context->destroy();
+    engine->destroy();
+    trtRuntime->destroy();
+
     return 0;
 }
