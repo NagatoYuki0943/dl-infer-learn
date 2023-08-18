@@ -211,11 +211,11 @@ int main() {
     float* output = new float[outSize];
 
     // DMA the input to the GPU,  execute the batch asynchronously, and DMA it back:
-    cudaMemcpy(cudaBuffers[0], image.ptr<float>(), 224*224*3*4, cudaMemcpyHostToDevice);
+    cudaMemcpy(cudaBuffers[0], image.ptr<float>(), bufferSize[0], cudaMemcpyHostToDevice);
     // cudaMemcpyAsync(cudaBuffers[0], image.ptr<float>(), bufferSize[0], cudaMemcpyHostToDevice, stream);  // 异步没有把数据移动上去,很奇怪
     // do inference
     context->executeV2(cudaBuffers);
-    cudaMemcpy(output, cudaBuffers[1], 1000*4, cudaMemcpyDeviceToHost);
+    cudaMemcpy(output, cudaBuffers[1], bufferSize[1], cudaMemcpyDeviceToHost);
     // cudaMemcpyAsync(output, cudaBuffers[1], bufferSize[1], cudaMemcpyDeviceToHost, stream);
     cudaStreamSynchronize(stream);
     /*********************** infer ***********************/
