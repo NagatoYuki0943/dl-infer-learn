@@ -1,5 +1,7 @@
 
 
+# 支持dynamic axis(导出例子有解释)
+
 # download libraries
 
 ## opencv
@@ -222,14 +224,17 @@ assert tensorrt.Builder(tensorrt.Logger())
   --help, -h                  Print this message
 ```
 
-> 导出
+## 导出命令例子
 
 ```powershell
-trtexec --onnx=resnet18.onnx --saveEngine=resnet18.engine     	          	# Precision: FP32
-trtexec --onnx=resnet18.onnx --saveEngine=resnet18.engine --fp16	        # Precision: FP32+FP16
-trtexec --onnx=resnet18.onnx --saveEngine=resnet18.engine --int8	        # Precision: FP32+INT8
-trtexec --onnx=resnet18.onnx --saveEngine=resnet18.engine --fp16 --int8	  	# Precision: FP32+FP16+INT8
-trtexec --onnx=resnet18.onnx --saveEngine=resnet18.engine --best	        # Precision: FP32+FP16+INT8
+trtexec --onnx=shufflenet_v2_x0_5.onnx --saveEngine=shufflenet_v2_x0_5.engine     	          	# Precision: FP32
+trtexec --onnx=shufflenet_v2_x0_5.onnx --saveEngine=shufflenet_v2_x0_5.engine --fp16	        # Precision: FP32+FP16
+trtexec --onnx=shufflenet_v2_x0_5.onnx --saveEngine=shufflenet_v2_x0_5.engine --int8	        # Precision: FP32+INT8
+trtexec --onnx=shufflenet_v2_x0_5.onnx --saveEngine=shufflenet_v2_x0_5.engine --fp16 --int8	  	# Precision: FP32+FP16+INT8
+trtexec --onnx=shufflenet_v2_x0_5.onnx --saveEngine=shufflenet_v2_x0_5.engine --best	        # Precision: FP32+FP16+INT8
+
+# dynamic batch:																						    设定最小shape,优化shape,最大shape,`images`指的是input name
+trtexec --onnx=shufflenet_v2_x0_5_dynamic_batch.onnx --saveEngine=shufflenet_v2_x0_5_dynamic_batch.engine --minShapes=images:1x3x224x224 --optShapes=images:4x3x224x224 --maxShapes=images:8x3x224x224
 ```
 
 
