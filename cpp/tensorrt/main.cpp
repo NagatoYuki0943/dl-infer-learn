@@ -113,7 +113,7 @@ int main() {
     else {
         model_path = "../../../../../models/shufflenet_v2_x0_5.engine";
     }
-    
+
     cv::Mat image = cv::imread(image_path);
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
 
@@ -137,8 +137,8 @@ int main() {
     else {
         image = cv::dnn::blobFromImage(image);
     }
-    
-    
+
+
     /***************************** preprocess *****************************/
 
     /******************************* engine *******************************/
