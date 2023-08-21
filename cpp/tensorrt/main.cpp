@@ -192,6 +192,8 @@ int main() {
             assert(batches >= minDims.d[0] && batches <= maxDims.d[0]);
             // 显式设置batch
             context->setInputShape(name.c_str(), nvinfer1::Dims4(batches, maxDims.d[1], maxDims.d[2], maxDims.d[3]));
+            // 设置为最小batch
+            // context->setInputShape(name.c_str(), minDims);
             dims = context->getTensorShape(name.c_str());
         }
         int totalSize = volume(dims) * getElementSize(dtype);
