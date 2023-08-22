@@ -59,8 +59,7 @@ static int print_topk(const vector<float>& cls_scores, const vector<string>& cls
         float score = vec[i].first;
         int index = vec[i].second;
         string name = cls_names[index];
-        cout << index << " = " << score << " => " << name << endl;
-        // fprintf(stderr, "%d = %f => %s\n", index, score, name);
+        fprintf(stderr, "%d = %f => %s\n", index, score, name.c_str());
     }
 
     return 0;
