@@ -135,7 +135,7 @@ int main() {
 
     /**************************** postprocess *****************************/
     // 将结果取出放入vector中
-    std::vector<float> scores;
+    vector<float> scores;
     scores.resize(out_flatterned.w);
     for (int j = 0; j < out_flatterned.w; j++) {
         scores[j] = out_flatterned[j];

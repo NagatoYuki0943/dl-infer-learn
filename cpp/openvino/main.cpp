@@ -187,7 +187,7 @@ int main() {
 
     /**************************** postprocess *****************************/
     // 可以将结果取出放入vector中
-    std::vector<float> scores;
+    vector<float> scores;
     scores.resize(output_size);
     for (int i = 0; i < output_size; i++) {
         scores[i] = floatarr[i];
