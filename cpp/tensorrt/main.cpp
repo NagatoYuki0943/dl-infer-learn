@@ -257,17 +257,17 @@ int main() {
     assert(classes.size() == batch1ResultLength);
 
     // 获取图片的分数
-    vector<vector<float>> batch1Scores = vector<vector<float>>(1, vector<float>(batch1ResultLength, 0));;
+    vector<vector<float>> batchScores = vector<vector<float>>(1, vector<float>(batch1ResultLength, 0));;
     if (dynamic_batch) {
-        batch1Scores = vector<vector<float>>(batches, vector<float>(batch1ResultLength, 0));
+        batchScores = vector<vector<float>>(batches, vector<float>(batch1ResultLength, 0));
     }
     for (size_t i = 0; i < outSize; i++) {
-        batch1Scores[i / batch1ResultLength][i % batch1ResultLength] = scores[i];
+        batchScores[i / batch1ResultLength][i % batch1ResultLength] = scores[i];
     };
 
     // 打印topk
-    for (auto& batch1Score : batch1Scores) {
-        print_topk(batch1Score, classes, 5);
+    for (auto& batchScore : batchScores) {
+        print_topk(batchScore, classes, 5);
         cout << endl;
     }
 
