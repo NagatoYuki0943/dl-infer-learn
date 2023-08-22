@@ -238,7 +238,7 @@ int main() {
     scores = vectorSoftmax(scores);
     /**************************** postprocess *****************************/
 
-    // 只获取第一张图片的结果
+    // 单张图片结果的长度
     int batch1ResultLength = outSize;
     if (dynamic_batch) {
         batch1ResultLength = outSize / batches;
