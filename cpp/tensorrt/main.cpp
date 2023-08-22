@@ -66,8 +66,7 @@ static int print_topk(const vector<float>& cls_scores, const vector<string>& cls
         float score = vec[i].first;
         int index = vec[i].second;
         string name = cls_names[index];
-        cout << index << " = " << score << " => " << name << endl;
-        // fprintf(stderr, "%d = %f => %s\n", index, score, name);
+        fprintf(stderr, "%d = %f => %s\n", index, score, name.c_str());
     }
 
     return 0;
@@ -129,13 +128,14 @@ int main() {
     cv::divide(image, std_scalar, image);
     // [H, W, C] -> [N, C, H, W]
 
+    cv::Mat blob;
     if (dynamic_batch) {
         // 初始化batches张图片
         vector<cv::Mat> images = vector<cv::Mat>(batches, image);
-        image = cv::dnn::blobFromImages(cv::InputArrayOfArrays(images));
+        blob = cv::dnn::blobFromImages(images);
     }
     else {
-        image = cv::dnn::blobFromImage(image);
+        blob = cv::dnn::blobFromImage(image);
     }
 
 
@@ -174,12 +174,12 @@ int main() {
     //get buffers
     int nbBindings = engine->getNbBindings();
     assert(nbBindings == 2);
-    std::vector<int> bufferSize(nbBindings);
+    vector<int> bufferSize(nbBindings);
     void* cudaBuffers[2];
     for (int i = 0; i < nbBindings; i++) {
         string name = engine->getIOTensorName(i);
         int mode = int(engine->getTensorIOMode(name.c_str()));
-        cout << "mode: " << mode << endl; // 0:input or output  1:input  2:output
+        // cout << "mode: " << mode << endl; // 0:input or output  1:input  2:output
         nvinfer1::DataType dtype = engine->getTensorDataType(name.c_str());
         nvinfer1::Dims dims = context->getTensorShape(name.c_str());
 
@@ -197,9 +197,12 @@ int main() {
             dims = context->getTensorShape(name.c_str());
         }
         int totalSize = volume(dims) * getElementSize(dtype);
-        cout << "totalSize: " << totalSize << endl;
         bufferSize[i] = totalSize;
         cudaMalloc(&cudaBuffers[i], totalSize);
+
+        fprintf(stderr, "name: %s, mode: %d, dims: [%d, %d, %d, %d], totalSize: %d\n", name.c_str(), mode, dims.d[0], dims.d[1], dims.d[2], dims.d[3], totalSize);
+        // name: images, mode : 1, dims : [4, 3, 224, 224] , totalSize : 2408448
+        // name : classes, mode : 2, dims : [4, 1000, 0, 0] , totalSize : 16000
     }
     /********************** binding **********************/
 
@@ -213,7 +216,7 @@ int main() {
     float* output = new float[outSize];
 
     // DMA the input to the GPU,  execute the batch asynchronously, and DMA it back:
-    cudaMemcpy(cudaBuffers[0], image.ptr<float>(), bufferSize[0], cudaMemcpyHostToDevice);
+    cudaMemcpy(cudaBuffers[0], blob.ptr<float>(), bufferSize[0], cudaMemcpyHostToDevice);
     // cudaMemcpyAsync(cudaBuffers[0], image.ptr<float>(), bufferSize[0], cudaMemcpyHostToDevice, stream);  // 异步没有把数据移动上去,很奇怪
     // do inference
     context->executeV2(cudaBuffers);
@@ -225,7 +228,7 @@ int main() {
 
     /**************************** postprocess *****************************/
     // 可以将结果取出放入vector中
-    std::vector<float> scores;
+    vector<float> scores;
     scores.resize(outSize);
     for (int i = 0; i < outSize; i++) {
         scores[i] = output[i];
@@ -253,14 +256,20 @@ int main() {
     // 确保模型输出长度和classes长度相同
     assert(classes.size() == batch1ResultLength);
 
-    // 获取第一张图片的分数
-    std::vector<float> batch1Scores(batch1ResultLength);
-    for (size_t i = 0; i < batch1ResultLength; i++) {
-        batch1Scores[i] = scores[i];
+    // 获取图片的分数
+    vector<vector<float>> batch1Scores = vector<vector<float>>(1, vector<float>(batch1ResultLength, 0));;
+    if (dynamic_batch) {
+        batch1Scores = vector<vector<float>>(batches, vector<float>(batch1ResultLength, 0));
+    }
+    for (size_t i = 0; i < outSize; i++) {
+        batch1Scores[i / batch1ResultLength][i % batch1ResultLength] = scores[i];
     };
 
     // 打印topk
-    print_topk(batch1Scores, classes, 5);
+    for (auto& batch1Score : batch1Scores) {
+        print_topk(batch1Score, classes, 5);
+        cout << endl;
+    }
 
     // 析构顺序很重要
     context->destroy();
