@@ -100,7 +100,7 @@ int main() {
     string image_path = "../../../../../cat.jpg";
     string classes_name_path = "../../../../../imagenet_class_index.txt";
 
-    string model_path = "../../../../../models/shufflenet_v2_x0_5.xml";
+    string model_path = "../../../../../models/shufflenet_v2_x0_5_openvino_dynamic_batch/shufflenet_v2_x0_5_dynamic_batch.xml";
     string device = "CPU"; // CPU or GPU or GPU.0
     bool openvino_preprocess = true;
 
