@@ -73,8 +73,8 @@ int main() {
     string image_path = "../../../../../cat.jpg";
     string classes_name_path = "../../../../../imagenet_class_index.txt";
 
-    string param_path = "../../../../../models/shufflenet_v2_x0_5-sim-opt.param";
-    string model_path = "../../../../../models/shufflenet_v2_x0_5-sim-opt.bin";
+    string param_path = "../../../../../models/shufflenet_v2_x0_5_ncnn/shufflenet_v2_x0_5-sim-opt.param";
+    string model_path = "../../../../../models/shufflenet_v2_x0_5_ncnn/shufflenet_v2_x0_5-sim-opt.bin";
 
     cv::Mat image = cv::imread(image_path);
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
