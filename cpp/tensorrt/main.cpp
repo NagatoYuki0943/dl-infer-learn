@@ -99,7 +99,7 @@ inline unsigned int getElementSize(nvinfer1::DataType t)
 */
 int main() {
     int trt_version = nvinfer1::kNV_TENSORRT_VERSION_IMPL;
-    cout << "trt_version = " << trt_version << endl;
+    cout << "trt_version = " << trt_version << endl;    // 8601
 
     string image_path = "../../../../../cat.jpg";
     string classes_name_path = "../../../../../imagenet_class_index.txt";
@@ -167,6 +167,7 @@ int main() {
     nvinfer1::IRuntime* trtRuntime = nvinfer1::createInferRuntime(sample::gLogger.getTRTLogger());
     initLibNvInferPlugins(&sample::gLogger, "");
     nvinfer1::ICudaEngine* engine = trtRuntime->deserializeCudaEngine(cached_engine.data(), cached_engine.size(), nullptr);
+    assert(engine != nullptr);
     std::cout << "deserialize done" << std::endl;
     /******************** load engine ********************/
 
