@@ -98,6 +98,9 @@ inline unsigned int getElementSize(nvinfer1::DataType t)
 *
 */
 int main() {
+    int trt_version = nvinfer1::kNV_TENSORRT_VERSION_IMPL;
+    cout << "trt_version = " << trt_version << endl;
+
     string image_path = "../../../../../cat.jpg";
     string classes_name_path = "../../../../../imagenet_class_index.txt";
     string model_path;
@@ -177,25 +180,53 @@ int main() {
     vector<int> bufferSize(nbBindings);
     void* cudaBuffers[2];
     for (int i = 0; i < nbBindings; i++) {
-        const char* name = engine->getIOTensorName(i);
-        int mode = int(engine->getTensorIOMode(name));
-        // cout << "mode: " << mode << endl; // 0:input or output  1:input  2:output
-        nvinfer1::DataType dtype = engine->getTensorDataType(name);
-        nvinfer1::Dims dims = context->getTensorShape(name);
+        const char* name;
+        int mode;
+        nvinfer1::DataType dtype;
+        nvinfer1::Dims dims;
 
-        // dynamic batch
-        if ((*dims.d == -1) && (mode == 1)) {
-            nvinfer1::Dims minDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kMIN);
-            nvinfer1::Dims optDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kOPT);
-            nvinfer1::Dims maxDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kMAX);
-            // 自己设置的batch必须在最小和最大batch之间
-            assert(batches >= minDims.d[0] && batches <= maxDims.d[0]);
-            // 显式设置batch
-            context->setInputShape(name, nvinfer1::Dims4(batches, maxDims.d[1], maxDims.d[2], maxDims.d[3]));
-            // 设置为最小batch
-            // context->setInputShape(name, minDims);
-            dims = context->getTensorShape(name);
+        if (trt_version < 8500) {
+            mode = engine->bindingIsInput(i);
+            name = engine->getBindingName(i);
+            dtype = engine->getBindingDataType(i);
+            dims = context->getBindingDimensions(i);
+
+            // dynamic batch
+            if ((*dims.d == -1) && mode) {
+                nvinfer1::Dims minDims = engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kMIN);
+                nvinfer1::Dims optDims = engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kOPT);
+                nvinfer1::Dims maxDims = engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kMAX);
+                // 自己设置的batch必须在最小和最大batch之间
+                assert(batches >= minDims.d[0] && batches <= maxDims.d[0]);
+                // 显式设置batch
+                context->setBindingDimensions(i, nvinfer1::Dims4(batches, maxDims.d[1], maxDims.d[2], maxDims.d[3]));
+                // 设置为最小batch
+                // context->setBindingDimensions(i, minDims);
+                dims = context->getBindingDimensions(i);
+            }
         }
+        else {
+            name = engine->getIOTensorName(i);
+            mode = int(engine->getTensorIOMode(name));
+            // cout << "mode: " << mode << endl; // 0:input or output  1:input  2:output
+            dtype = engine->getTensorDataType(name);
+            dims = context->getTensorShape(name);
+
+            // dynamic batch
+            if ((*dims.d == -1) && (mode == 1)) {
+                nvinfer1::Dims minDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kMIN);
+                nvinfer1::Dims optDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kOPT);
+                nvinfer1::Dims maxDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kMAX);
+                // 自己设置的batch必须在最小和最大batch之间
+                assert(batches >= minDims.d[0] && batches <= maxDims.d[0]);
+                // 显式设置batch
+                context->setInputShape(name, nvinfer1::Dims4(batches, maxDims.d[1], maxDims.d[2], maxDims.d[3]));
+                // 设置为最小batch
+                // context->setInputShape(name, minDims);
+                dims = context->getTensorShape(name);
+            }
+        }
+
         int totalSize = volume(dims) * getElementSize(dtype);
         bufferSize[i] = totalSize;
         cudaMalloc(&cudaBuffers[i], totalSize);
