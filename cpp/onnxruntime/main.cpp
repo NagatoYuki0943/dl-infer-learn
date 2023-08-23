@@ -72,7 +72,7 @@ int main() {
     string image_path = "../../../../../cat.jpg";
     string classes_name_path = "../../../../../imagenet_class_index.txt";
 
-    string model_path = "../../../../../models/shufflenet_v2_x0_5.onnx";
+    string model_path = "../../../../../models/shufflenet_v2_x0_5_dynamic_batch.onnx";
     int threads = 4;
     string device = "cuda";
     int gpu_mem_limit = 4;
@@ -180,19 +180,29 @@ int main() {
     }
 
     for (int i = 0; i < input_nums; ++i) {
-        cout << "input_dims: ";
-        for (const auto j : input_dims[i]) {
+        cout << "input_dims: [ ";
+        for (auto& j : input_dims[i]) {
             cout << j << " ";
+            // support dynamic batch
+            if (j == -1) {
+                cout << "(dynamic shape, -1 => 1) ";
+                j = 1;
+            }
         }
-        cout << endl;
+        cout << "]" << endl;
     }
 
     for (int i = 0; i < output_nums; ++i) {
-        cout << "output_dims: ";
-        for (const auto j : output_dims[i]) {
+        cout << "output_dims: [ ";
+        for (auto& j : output_dims[i]) {
             cout << j << " ";
+            // support dynamic batch
+            if (j == -1){
+                cout << "(dynamic shape, -1 => 1) ";
+                j = 1;
+            }
         }
-        cout << endl;
+        cout << "]" << endl;
     }
 
     // classes length
