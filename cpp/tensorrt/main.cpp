@@ -177,6 +177,7 @@ int main() {
     assert(context != nullptr);
 
     //get buffers
+    int max_batches;
     int nbBindings = engine->getNbBindings();
     assert(nbBindings == 2);
     vector<int> bufferSize(nbBindings);
@@ -195,15 +196,18 @@ int main() {
 
             // dynamic batch
             if ((*dims.d == -1) && mode) {
-                nvinfer1::Dims minDims = engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kMIN);
-                nvinfer1::Dims optDims = engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kOPT);
+                // nvinfer1::Dims minDims = engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kMIN);
+                // nvinfer1::Dims optDims = engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kOPT);
                 nvinfer1::Dims maxDims = engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kMAX);
-                // 自己设置的batch必须在最小和最大batch之间
-                assert(dynamic_batches >= minDims.d[0] && dynamic_batches <= maxDims.d[0]);
-                // 显式设置batch
-                context->setBindingDimensions(i, nvinfer1::Dims4(dynamic_batches, maxDims.d[1], maxDims.d[2], maxDims.d[3]));
-                // 设置为最小batch
-                // context->setBindingDimensions(i, minDims);
+                max_batches = maxDims.d[0];
+                if (dynamic_batch) {
+                    // 设置为最大batch
+                    context->setBindingDimensions(i, maxDims);
+                }
+                else {
+                    // 显式设置batch为1
+                    context->setBindingDimensions(i, nvinfer1::Dims4(1, maxDims.d[1], maxDims.d[2], maxDims.d[3]));
+                }
                 dims = context->getBindingDimensions(i);
             }
         }
@@ -216,15 +220,18 @@ int main() {
 
             // dynamic batch
             if ((*dims.d == -1) && (mode == 1)) {
-                nvinfer1::Dims minDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kMIN);
-                nvinfer1::Dims optDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kOPT);
+                // nvinfer1::Dims minDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kMIN);
+                // nvinfer1::Dims optDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kOPT);
                 nvinfer1::Dims maxDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kMAX);
-                // 自己设置的batch必须在最小和最大batch之间
-                assert(dynamic_batches >= minDims.d[0] && dynamic_batches <= maxDims.d[0]);
-                // 显式设置batch
-                context->setInputShape(name, nvinfer1::Dims4(dynamic_batches, maxDims.d[1], maxDims.d[2], maxDims.d[3]));
-                // 设置为最小batch
-                // context->setInputShape(name, minDims);
+                max_batches = maxDims.d[0];
+                if (dynamic_batch) {
+                    // 设置为最大batch
+                    context->setInputShape(name, maxDims);
+                }
+                else {
+                    // 显式设置batch为1
+                    context->setInputShape(name, nvinfer1::Dims4(1, maxDims.d[1], maxDims.d[2], maxDims.d[3]));
+                }
                 dims = context->getTensorShape(name);
             }
         }
@@ -244,16 +251,23 @@ int main() {
     cudaStream_t stream;
     cudaStreamCreate(&stream);
     // float长度
+    int inLength = bufferSize[0];
+    int outLength = bufferSize[1];
     int outSize = int(bufferSize[1] / sizeof(float));
+    if (dynamic_batch) {
+        inLength = int(bufferSize[0] / max_batches * images.size());
+        outLength = int(bufferSize[1] / max_batches * images.size());
+        outSize = int(bufferSize[1] / max_batches * images.size() / sizeof(float));
+    }
     cout << "outSize: " << outSize << endl;
     float* output = new float[outSize];
 
     // DMA the input to the GPU,  execute the batch asynchronously, and DMA it back:
-    cudaMemcpy(cudaBuffers[0], blob.ptr<float>(), bufferSize[0] / dynamic_batches * images.size(), cudaMemcpyHostToDevice);
+    cudaMemcpy(cudaBuffers[0], blob.ptr<float>(), inLength, cudaMemcpyHostToDevice);
     // cudaMemcpyAsync(cudaBuffers[0], image.ptr<float>(), bufferSize[0], cudaMemcpyHostToDevice, stream);  // 异步没有把数据移动上去,很奇怪
     // do inference
     context->executeV2(cudaBuffers);
-    cudaMemcpy(output, cudaBuffers[1], bufferSize[1] / dynamic_batches * images.size(), cudaMemcpyDeviceToHost);
+    cudaMemcpy(output, cudaBuffers[1], outLength, cudaMemcpyDeviceToHost);
     // cudaMemcpyAsync(output, cudaBuffers[1], bufferSize[1], cudaMemcpyDeviceToHost, stream);
     cudaStreamSynchronize(stream);
     /*********************** infer ***********************/
