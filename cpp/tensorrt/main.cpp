@@ -108,7 +108,7 @@ int main() {
     // 支持dynamic batch infer,需要注意batch为几,就要输入几张图片,这个和python版本不同,python可以输入比batch少的图片数量
     bool dynamic_batch = true;
     // dynamic batch requires explicit specification of batch
-    int batches = 4;
+    int dynamic_batches = 4;
     if (dynamic_batch) {
         model_path = "../../../../../models/shufflenet_v2_x0_5_dynamic_batch.engine";
     }
@@ -131,10 +131,11 @@ int main() {
     cv::divide(image, std_scalar, image);
     // [H, W, C] -> [N, C, H, W]
 
+    vector<cv::Mat> images;
     cv::Mat blob;
     if (dynamic_batch) {
-        // 初始化batches张图片
-        vector<cv::Mat> images = vector<cv::Mat>(batches, image);
+        // 初始化dynamic_batches张图片
+        images = vector<cv::Mat>(dynamic_batches, image);
         blob = cv::dnn::blobFromImages(images);
     }
     else {
@@ -198,9 +199,9 @@ int main() {
                 nvinfer1::Dims optDims = engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kOPT);
                 nvinfer1::Dims maxDims = engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kMAX);
                 // 自己设置的batch必须在最小和最大batch之间
-                assert(batches >= minDims.d[0] && batches <= maxDims.d[0]);
+                assert(dynamic_batches >= minDims.d[0] && dynamic_batches <= maxDims.d[0]);
                 // 显式设置batch
-                context->setBindingDimensions(i, nvinfer1::Dims4(batches, maxDims.d[1], maxDims.d[2], maxDims.d[3]));
+                context->setBindingDimensions(i, nvinfer1::Dims4(dynamic_batches, maxDims.d[1], maxDims.d[2], maxDims.d[3]));
                 // 设置为最小batch
                 // context->setBindingDimensions(i, minDims);
                 dims = context->getBindingDimensions(i);
@@ -219,9 +220,9 @@ int main() {
                 nvinfer1::Dims optDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kOPT);
                 nvinfer1::Dims maxDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kMAX);
                 // 自己设置的batch必须在最小和最大batch之间
-                assert(batches >= minDims.d[0] && batches <= maxDims.d[0]);
+                assert(dynamic_batches >= minDims.d[0] && dynamic_batches <= maxDims.d[0]);
                 // 显式设置batch
-                context->setInputShape(name, nvinfer1::Dims4(batches, maxDims.d[1], maxDims.d[2], maxDims.d[3]));
+                context->setInputShape(name, nvinfer1::Dims4(dynamic_batches, maxDims.d[1], maxDims.d[2], maxDims.d[3]));
                 // 设置为最小batch
                 // context->setInputShape(name, minDims);
                 dims = context->getTensorShape(name);
@@ -248,11 +249,11 @@ int main() {
     float* output = new float[outSize];
 
     // DMA the input to the GPU,  execute the batch asynchronously, and DMA it back:
-    cudaMemcpy(cudaBuffers[0], blob.ptr<float>(), bufferSize[0], cudaMemcpyHostToDevice);
+    cudaMemcpy(cudaBuffers[0], blob.ptr<float>(), bufferSize[0] / dynamic_batches * images.size(), cudaMemcpyHostToDevice);
     // cudaMemcpyAsync(cudaBuffers[0], image.ptr<float>(), bufferSize[0], cudaMemcpyHostToDevice, stream);  // 异步没有把数据移动上去,很奇怪
     // do inference
     context->executeV2(cudaBuffers);
-    cudaMemcpy(output, cudaBuffers[1], bufferSize[1], cudaMemcpyDeviceToHost);
+    cudaMemcpy(output, cudaBuffers[1], bufferSize[1] / dynamic_batches * images.size(), cudaMemcpyDeviceToHost);
     // cudaMemcpyAsync(output, cudaBuffers[1], bufferSize[1], cudaMemcpyDeviceToHost, stream);
     cudaStreamSynchronize(stream);
     /*********************** infer ***********************/
@@ -273,7 +274,7 @@ int main() {
     // 单张图片结果的长度
     int batch1ResultLength = outSize;
     if (dynamic_batch) {
-        batch1ResultLength = outSize / batches;
+        batch1ResultLength = outSize / dynamic_batches;
     }
 
     // 读取classes name
@@ -291,7 +292,7 @@ int main() {
     // 获取图片的分数
     vector<vector<float>> batchScores = vector<vector<float>>(1, vector<float>(batch1ResultLength, 0));;
     if (dynamic_batch) {
-        batchScores = vector<vector<float>>(batches, vector<float>(batch1ResultLength, 0));
+        batchScores = vector<vector<float>>(dynamic_batches, vector<float>(batch1ResultLength, 0));
     }
     for (size_t i = 0; i < outSize; i++) {
         batchScores[i / batch1ResultLength][i % batch1ResultLength] = scores[i];
