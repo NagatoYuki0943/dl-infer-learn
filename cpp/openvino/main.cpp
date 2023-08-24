@@ -171,8 +171,8 @@ int main() {
 
     // 创建tensor
     ov::Tensor input_tensor = ov::Tensor(
-        compiled_model.input(0).get_element_type(),
-        compiled_model.input(0).get_shape(),
+        compiled_model.input(0).get_element_type(), // inputs[0].get_element_type()
+        compiled_model.input(0).get_shape(),        // inputs[0]..get_shape()
         (float*)image.data
     );
 
