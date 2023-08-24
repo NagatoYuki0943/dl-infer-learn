@@ -177,6 +177,7 @@ int main() {
     assert(context != nullptr);
 
     //get buffers
+    int min_batches;
     int max_batches;
     int nbBindings = engine->getNbBindings();
     assert(nbBindings == 2);
@@ -196,7 +197,8 @@ int main() {
 
             // dynamic batch
             if ((*dims.d == -1) && mode) {
-                // nvinfer1::Dims minDims = engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kMIN);
+                nvinfer1::Dims minDims = engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kMIN);
+                min_batches = minDims.d[0];
                 // nvinfer1::Dims optDims = engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kOPT);
                 nvinfer1::Dims maxDims = engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kMAX);
                 max_batches = maxDims.d[0];
@@ -220,7 +222,8 @@ int main() {
 
             // dynamic batch
             if ((*dims.d == -1) && (mode == 1)) {
-                // nvinfer1::Dims minDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kMIN);
+                nvinfer1::Dims minDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kMIN);
+                min_batches = minDims.d[0];
                 // nvinfer1::Dims optDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kOPT);
                 nvinfer1::Dims maxDims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kMAX);
                 max_batches = maxDims.d[0];
@@ -240,11 +243,13 @@ int main() {
         bufferSize[i] = totalSize;
         cudaMalloc(&cudaBuffers[i], totalSize);
 
-        fprintf(stderr, "name: %s, mode: %d, dims: [%d, %d, %d, %d], totalSize: %d\n", name, mode, dims.d[0], dims.d[1], dims.d[2], dims.d[3], totalSize);
-        // name: images, mode : 1, dims : [4, 3, 224, 224] , totalSize : 2408448
-        // name : classes, mode : 2, dims : [4, 1000, 0, 0] , totalSize : 16000
+        fprintf(stderr, "name: %s, mode: %d, dims: [%d, %d, %d, %d], totalSize: %d Byte\n", name, mode, dims.d[0], dims.d[1], dims.d[2], dims.d[3], totalSize);
+        // name: images, mode : 1, dims : [8, 3, 224, 224] , totalSize : 4816896 Byte
+        // name : classes, mode : 2, dims : [8, 1000, 0, 0] , totalSize : 32000 Byte
     }
     /********************** binding **********************/
+    if (dynamic_batch)
+        assert(dynamic_batches >= min_batches && dynamic_batches <= max_batches);
 
     /*********************** infer ***********************/
     // get stream
@@ -253,14 +258,15 @@ int main() {
     // float长度
     int inLength = bufferSize[0];
     int outLength = bufferSize[1];
-    int outSize = int(bufferSize[1] / sizeof(float));
+    int outNums = int(bufferSize[1] / sizeof(float)); // sizeof(float) = 4 Byte = 32bit
     if (dynamic_batch) {
         inLength = int(bufferSize[0] / max_batches * images.size());
         outLength = int(bufferSize[1] / max_batches * images.size());
-        outSize = int(bufferSize[1] / max_batches * images.size() / sizeof(float));
+        outNums = int(bufferSize[1] / max_batches * images.size() / sizeof(float));
     }
-    cout << "outSize: " << outSize << endl;
-    float* output = new float[outSize];
+    cout << "outNums: " << outNums << " nums" << endl;
+
+    float* output = new float[outNums];
 
     // DMA the input to the GPU,  execute the batch asynchronously, and DMA it back:
     cudaMemcpy(cudaBuffers[0], blob.ptr<float>(), inLength, cudaMemcpyHostToDevice);
@@ -276,8 +282,8 @@ int main() {
     /**************************** postprocess *****************************/
     // 可以将结果取出放入vector中
     vector<float> scores;
-    scores.resize(outSize);
-    for (int i = 0; i < outSize; i++) {
+    scores.resize(outNums);
+    for (int i = 0; i < outNums; i++) {
         scores[i] = output[i];
     }
     delete[] output; // 对于基本数据类型, delete 和 delete[] 效果相同
@@ -286,9 +292,9 @@ int main() {
     /**************************** postprocess *****************************/
 
     // 单张图片结果的长度
-    int batch1ResultLength = outSize;
+    int batch1ResultLength = outNums;
     if (dynamic_batch) {
-        batch1ResultLength = outSize / dynamic_batches;
+        batch1ResultLength = outNums / dynamic_batches;
     }
 
     // 读取classes name
@@ -308,7 +314,7 @@ int main() {
     if (dynamic_batch) {
         batchScores = vector<vector<float>>(dynamic_batches, vector<float>(batch1ResultLength, 0));
     }
-    for (size_t i = 0; i < outSize; i++) {
+    for (size_t i = 0; i < outNums; i++) {
         batchScores[i / batch1ResultLength][i % batch1ResultLength] = scores[i];
     };
 
