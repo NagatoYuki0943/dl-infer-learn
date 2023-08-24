@@ -252,9 +252,6 @@ int main() {
         assert(dynamic_batches >= min_batches && dynamic_batches <= max_batches);
 
     /*********************** infer ***********************/
-    // get stream
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
     // float长度
     int inLength = bufferSize[0];
     int outLength = bufferSize[1];
@@ -268,14 +265,19 @@ int main() {
 
     float* output = new float[outNums];
 
-    // DMA the input to the GPU,  execute the batch asynchronously, and DMA it back:
+    /****** sync infer ******/
     cudaMemcpy(cudaBuffers[0], blob.ptr<float>(), inLength, cudaMemcpyHostToDevice);
-    // cudaMemcpyAsync(cudaBuffers[0], image.ptr<float>(), bufferSize[0], cudaMemcpyHostToDevice, stream);  // 异步没有把数据移动上去,很奇怪
-    // do inference
     context->executeV2(cudaBuffers);
     cudaMemcpy(output, cudaBuffers[1], outLength, cudaMemcpyDeviceToHost);
-    // cudaMemcpyAsync(output, cudaBuffers[1], bufferSize[1], cudaMemcpyDeviceToHost, stream);
-    cudaStreamSynchronize(stream);
+
+    /****** async infer ******/
+    //cudaStream_t stream;
+    //cudaStreamCreate(&stream);
+    //cudaMemcpyAsync(cudaBuffers[0], image.ptr<float>(), inLength, cudaMemcpyHostToDevice, stream);
+    //context->enqueueV3(stream);
+    //cudaMemcpyAsync(output, cudaBuffers[1], outLength, cudaMemcpyDeviceToHost, stream);
+    //cudaStreamSynchronize(stream);
+
     /*********************** infer ***********************/
     /******************************* engine *******************************/
 
