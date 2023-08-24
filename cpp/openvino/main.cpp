@@ -101,8 +101,8 @@ int main() {
     string classes_name_path = "../../../../../imagenet_class_index.txt";
 
     string model_path = "../../../../../models/shufflenet_v2_x0_5_openvino_dynamic_batch/shufflenet_v2_x0_5_dynamic_batch.xml";
-    string device = "CPU"; // CPU or GPU or GPU.0
-    bool openvino_preprocess = true;
+    string device = "CPU";              // CPU or GPU or GPU.0
+    bool openvino_preprocess = true;    // 是否使用openvino图片预处理,使用dynamic shape必须要用openvino_preprocess
 
     cv::Mat image = cv::imread(image_path);
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
@@ -151,7 +151,8 @@ int main() {
         ppp.input(0).model().set_layout(ov::Layout("NCHW"));
 
         // Specify output results format
-        ppp.output(0).tensor().set_element_type(ov::element::f32);
+        for (int i = 0; i < model->get_output_size(); i++)
+            ppp.output(i).tensor().set_element_type(ov::element::f32);
 
         // Embed above steps in the graph
         model = ppp.build();
@@ -162,6 +163,26 @@ int main() {
 
     vector<ov::Output<const ov::Node>> inputs = compiled_model.inputs();    // 模型的输入列表名称
     vector<ov::Output<const ov::Node>> outputs = compiled_model.outputs();  // 模型的输出列表名称
+
+    // 打印输入输出形状
+    //dynamic shape model without openvino_preprocess coundn't print input and output shape
+    for (auto input : inputs) {
+        cout << "Input: " << input.get_any_name() << ": [ ";
+        for (auto j : input.get_shape()) {
+            cout << j << " ";
+        }
+        cout << "] ";
+        cout << "dtype: " << input.get_element_type() << endl;
+    }
+
+    for (auto output : outputs) {
+        cout << "Output: " << output.get_any_name() << ": [ ";
+        for (auto j : output.get_shape()) {
+            cout << j << " ";
+        }
+        cout << "] ";
+        cout << "dtype: " << output.get_element_type() << endl;
+    }
 
     // classes length
     int output_size = 1;
