@@ -119,6 +119,8 @@ int main() {
     cout << endl;
 
     // 推理器 每次都重新实例化一个extractor
+    // always create Extractor
+    // it's cheap and almost instantly !
     ncnn::Extractor ex = net.create_extractor();
     // light mode
     ex.set_light_mode(true);
