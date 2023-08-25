@@ -101,11 +101,11 @@ int main() {
 
     /**************************** postprocess *****************************/
     int output_size = out_mat.size().height * out_mat.size().width * out_mat.channels();
+
     // 可以将结果取出放入vector中
-    vector<float> scores;
-    scores.resize(output_size);
+    vector<float> scores(output_size);
     for (int i = 0; i < output_size; i++) {
-        scores[i] = out_mat.at<float>(0, i); // at(h, w)
+        scores[i] = out_mat.at<float>(i);
     }
     // vector softmax
     scores = vectorSoftmax(scores);
@@ -125,7 +125,7 @@ int main() {
     }
     infile.close();
     // 确保模型输出长度和classes长度相同
-    assert(classes.size() == out_mat.size[0]);
+    assert(classes.size() == output_size);
 
     // 打印topk
     print_topk(scores, classes, 5);

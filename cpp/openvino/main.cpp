@@ -208,11 +208,7 @@ int main() {
 
     /**************************** postprocess *****************************/
     // 可以将结果取出放入vector中
-    vector<float> scores;
-    scores.resize(output_size);
-    for (int i = 0; i < output_size; i++) {
-        scores[i] = floatarr[i];
-    }
+    vector<float> scores(floatarr, floatarr + output_size);
     // vector softmax
     scores = vectorSoftmax(scores);
 
@@ -232,7 +228,7 @@ int main() {
     }
     infile.close();
     // 确保模型输出长度和classes长度相同
-    assert(classes.size() == out_mat.size[0]);
+    assert(classes.size() == output_size);
 
     // 打印topk
     print_topk(scores, classes, 5);

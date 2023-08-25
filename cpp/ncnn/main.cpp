@@ -152,8 +152,7 @@ int main() {
 
         /**************************** postprocess *****************************/
         // 将结果取出放入vector中
-        vector<float> scores;
-        scores.resize(out_flatterned.w);
+        vector<float> scores(out_flatterned.w);
         for (int j = 0; j < out_flatterned.w; j++) {
             scores[j] = out_flatterned[j];
         }
@@ -161,7 +160,7 @@ int main() {
         scores = vectorSoftmax(scores);
 
         // 将ncnn::Mat转化为cv::Mat row=1000, cols=1
-        cv::Mat out_mat = cv::Mat(out_flatterned.w, out_flatterned.h, CV_32FC1, out_flatterned);
+        // cv::Mat out_mat = cv::Mat(out_flatterned.w, out_flatterned.h, CV_32FC1, out_flatterned);
         // opencv softmax
         // out_mat = opencvSoftmax(out_mat);
         /**************************** postprocess *****************************/
@@ -176,7 +175,7 @@ int main() {
         }
         infile.close();
         // 确保模型输出长度和classes长度相同
-        assert(classes.size() == out_mat.size[0]);
+        assert(classes.size() == scores.size());
 
         // 打印topk
         print_topk(scores, classes, 5);

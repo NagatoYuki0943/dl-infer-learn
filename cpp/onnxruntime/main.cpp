@@ -217,9 +217,9 @@ int main() {
     // 创建输入tensor
     Ort::Value input_tensor = Ort::Value::CreateTensor<float>(memory_info, image.ptr<float>(), image.total(), input_dims[0].data(), input_dims[0].size());
     // 推理 只传递输入
-    vector<Ort::Value> output_tensors;
+    vector<Ort::Value> output_tensor;
     try {
-        output_tensors = session.Run(
+        output_tensor = session.Run(
             runOptions,
             input_node_names.data(),
             &input_tensor,
@@ -233,16 +233,12 @@ int main() {
     }
 
     // 获取输出
-    float* floatarr = output_tensors[0].GetTensorMutableData<float>();
+    float* floatarr = output_tensor[0].GetTensorMutableData<float>();
     /**************************** onnxruntime *****************************/
 
     /**************************** postprocess *****************************/
     // 可以将结果取出放入vector中
-    vector<float> scores;
-    scores.resize(output_size);
-    for (int i = 0; i < output_size; i++) {
-        scores[i] = floatarr[i];
-    }
+    vector<float> scores(floatarr, floatarr + output_size);
     // vector softmax
     scores = vectorSoftmax(scores);
 
@@ -262,7 +258,7 @@ int main() {
     }
     infile.close();
     // 确保模型输出长度和classes长度相同
-    assert(classes.size() == out_mat.size[0]);
+    assert(classes.size() == output_size);
 
     // 打印topk
     print_topk(scores, classes, 5);

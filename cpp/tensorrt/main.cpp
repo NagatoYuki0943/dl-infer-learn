@@ -167,7 +167,7 @@ int main() {
 
     nvinfer1::IRuntime* trtRuntime = nvinfer1::createInferRuntime(sample::gLogger.getTRTLogger());
     initLibNvInferPlugins(&sample::gLogger, "");
-    nvinfer1::ICudaEngine* engine = trtRuntime->deserializeCudaEngine(cached_engine.data(), cached_engine.size(), nullptr);
+    nvinfer1::ICudaEngine* engine = trtRuntime->deserializeCudaEngine(cached_engine.data(), cached_engine.size());
     assert(engine != nullptr);
     std::cout << "deserialize done" << std::endl;
     /******************** load engine ********************/
@@ -263,32 +263,26 @@ int main() {
     }
     cout << "outNums: " << outNums << " nums" << endl;
 
-    float* output = new float[outNums];
-
+    vector<float> scores(outNums);
     /****** sync infer ******/
     cudaMemcpy(cudaBuffers[0], blob.ptr<float>(), inLength, cudaMemcpyHostToDevice);
     context->executeV2(cudaBuffers);
-    cudaMemcpy(output, cudaBuffers[1], outLength, cudaMemcpyDeviceToHost);
+    cudaMemcpy(scores.data(), cudaBuffers[1], outLength, cudaMemcpyDeviceToHost);
+    /****** sync infer ******/
 
-    /****** async infer ******/
+    ///****** async infer ******/
     //cudaStream_t stream;
     //cudaStreamCreate(&stream);
     //cudaMemcpyAsync(cudaBuffers[0], image.ptr<float>(), inLength, cudaMemcpyHostToDevice, stream);
+    //// context->enqueueV2(cudaBuffers, stream, nullptr);
     //context->enqueueV3(stream);
-    //cudaMemcpyAsync(output, cudaBuffers[1], outLength, cudaMemcpyDeviceToHost, stream);
+    //cudaMemcpyAsync(scores.data(), cudaBuffers[1], outLength, cudaMemcpyDeviceToHost, stream);
     //cudaStreamSynchronize(stream);
-
+    ///****** async infer ******/
     /*********************** infer ***********************/
     /******************************* engine *******************************/
 
     /**************************** postprocess *****************************/
-    // 可以将结果取出放入vector中
-    vector<float> scores;
-    scores.resize(outNums);
-    for (int i = 0; i < outNums; i++) {
-        scores[i] = output[i];
-    }
-    delete[] output; // 对于基本数据类型, delete 和 delete[] 效果相同
     // vector softmax
     scores = vectorSoftmax(scores);
     /**************************** postprocess *****************************/
