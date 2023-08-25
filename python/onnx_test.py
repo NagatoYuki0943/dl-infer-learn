@@ -2,7 +2,7 @@ import numpy as np
 import onnxruntime as ort
 import cv2
 
-path = "../models/resnet18.onnx"
+path = "../models/shufflenet_v2_x0_5.onnx"
 x = np.ones((1, 3, 224, 224), dtype=np.float32)
 
 ort_model: ort.InferenceSession = ort.InferenceSession(path, providers=["CPUExecutionProvider"])
@@ -435,3 +435,4 @@ print(y2)
 #    0.6597593  -3.4736252  -1.6141073   4.14771   ]]
 
 print(np.allclose(y1[0], y2, rtol=0.00001, atol=0.00001))
+# False
