@@ -1,8 +1,12 @@
 #include <opencv2/opencv.hpp>
-#include <ncnn/net.h>
 #include <iostream>
 #include <fstream>
 #include <math.h>
+#include <ncnn/net.h>
+#if NCNN_VULKAN
+#include <ncnn/gpu.h>
+#endif // NCNN_VULKAN
+
 
 using namespace std;
 
@@ -92,79 +96,95 @@ int main() {
     in.substract_mean_normalize(mean, std);
     /***************************** preprocess *****************************/
 
-    /******************************** ncnn ********************************/
-    ncnn::Net net;
+#if NCNN_VULKAN
+    ncnn::create_gpu_instance();
+#endif // NCNN_VULKAN
 
-    // 载入模型
-    net.load_param(param_path.c_str());
-    net.load_model(model_path.c_str());
+    {
 
-    // net.opt.use_fp16_packed = false;
-    // net.opt.use_fp16_storage = false;
-    // net.opt.use_fp16_arithmetic = false;
-    // net.opt.use_bf16_storage = false;
+        /******************************** ncnn ********************************/
+        ncnn::Net net;
 
-    // 输入输出名字
-    vector<const char*> input_names = net.input_names();
-    cout << "input numbers = " << input_names.size() << endl << "input name: ";
-    for (auto name : input_names) {
-        cout << name << " ";
-    };
-    cout << endl;
-    vector<const char*> output_names = net.output_names();
-    cout << "output numbers = " << output_names.size() << endl << "output name: ";
-    for (auto name : output_names) {
-        cout << name << " ";
-    };
-    cout << endl;
+#if NCNN_VULKAN
+        cout << "use vulkan" << endl;
+        net.opt.use_vulkan_compute = true;
+#endif // NCNN_VULKAN
 
-    // 推理器 每次都重新实例化一个extractor
-    // always create Extractor
-    // it's cheap and almost instantly !
-    ncnn::Extractor ex = net.create_extractor();
-    // light mode
-    ex.set_light_mode(true);
-    // 多线程加速
-    ex.set_num_threads(8);
+        // net.opt.use_fp16_packed = false;
+        // net.opt.use_fp16_storage = false;
+        // net.opt.use_fp16_arithmetic = false;
+        // net.opt.use_bf16_storage = false;
 
-    // 推理
-    ncnn::Mat out;
-    ex.input(input_names[0], in);
-    ex.extract(output_names[0], out);
-    // 获取输出
-    ncnn::Mat out_flatterned = out.reshape(out.w * out.h * out.c);
-    /******************************** ncnn ********************************/
+        // 载入模型
+        net.load_param(param_path.c_str());
+        net.load_model(model_path.c_str());
 
-    /**************************** postprocess *****************************/
-    // 将结果取出放入vector中
-    vector<float> scores;
-    scores.resize(out_flatterned.w);
-    for (int j = 0; j < out_flatterned.w; j++) {
-        scores[j] = out_flatterned[j];
+        // 输入输出名字
+        vector<const char*> input_names = net.input_names();
+        cout << "input numbers = " << input_names.size() << endl << "input name: ";
+        for (auto name : input_names) {
+            cout << name << " ";
+        };
+        cout << endl;
+        vector<const char*> output_names = net.output_names();
+        cout << "output numbers = " << output_names.size() << endl << "output name: ";
+        for (auto name : output_names) {
+            cout << name << " ";
+        };
+        cout << endl;
+
+        // 推理器 每次都重新实例化一个extractor
+        // always create Extractor
+        // it's cheap and almost instantly !
+        ncnn::Extractor ex = net.create_extractor();
+        // light mode
+        ex.set_light_mode(true);
+        // 多线程加速
+        ex.set_num_threads(8);
+
+        // 推理
+        ncnn::Mat out;
+        ex.input(input_names[0], in);
+        ex.extract(output_names[0], out);
+        // 获取输出
+        ncnn::Mat out_flatterned = out.reshape(out.w * out.h * out.c);
+        /******************************** ncnn ********************************/
+
+        /**************************** postprocess *****************************/
+        // 将结果取出放入vector中
+        vector<float> scores;
+        scores.resize(out_flatterned.w);
+        for (int j = 0; j < out_flatterned.w; j++) {
+            scores[j] = out_flatterned[j];
+        }
+        // vector softmax
+        scores = vectorSoftmax(scores);
+
+        // 将ncnn::Mat转化为cv::Mat row=1000, cols=1
+        cv::Mat out_mat = cv::Mat(out_flatterned.w, out_flatterned.h, CV_32FC1, out_flatterned);
+        // opencv softmax
+        // out_mat = opencvSoftmax(out_mat);
+        /**************************** postprocess *****************************/
+
+        // 读取classes name
+        ifstream infile;
+        infile.open(classes_name_path);
+        string l;
+        vector<string> classes;
+        while (std::getline(infile, l)) {
+            classes.push_back(l);
+        }
+        infile.close();
+        // 确保模型输出长度和classes长度相同
+        assert(classes.size() == out_mat.size[0]);
+
+        // 打印topk
+        print_topk(scores, classes, 5);
     }
-    // vector softmax
-    scores = vectorSoftmax(scores);
 
-    // 将ncnn::Mat转化为cv::Mat row=1000, cols=1
-    cv::Mat out_mat = cv::Mat(out_flatterned.w, out_flatterned.h, CV_32FC1, out_flatterned);
-    // opencv softmax
-    // out_mat = opencvSoftmax(out_mat);
-    /**************************** postprocess *****************************/
-
-    // 读取classes name
-    ifstream infile;
-    infile.open(classes_name_path);
-    string l;
-    vector<string> classes;
-    while (std::getline(infile, l)) {
-        classes.push_back(l);
-    }
-    infile.close();
-    // 确保模型输出长度和classes长度相同
-    assert(classes.size() == out_mat.size[0]);
-
-    // 打印topk
-    print_topk(scores, classes, 5);
+#if NCNN_VULKAN
+    ncnn::destroy_gpu_instance();
+#endif // NCNN_VULKAN
 
     return 0;
 }
