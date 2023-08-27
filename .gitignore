@@ -1,6 +1,11 @@
 .idea
 .vs
 .vscode
+
+# cxx
 cmake-build-debug
 cmake-build-release
 out
+
+# model file
+*.engine
