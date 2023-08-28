@@ -102,11 +102,10 @@ int main() {
     /**************************** postprocess *****************************/
     int output_size = out_mat.size().height * out_mat.size().width * out_mat.channels();
 
-    // 可以将结果取出放入vector中
-    vector<float> scores(output_size);
-    for (int i = 0; i < output_size; i++) {
-        scores[i] = out_mat.at<float>(i);
-    }
+    // 可以将结果取出放入vector中类似
+    // scores.assign((float*)out_mat.datastart, (float*)out_mat.dataend);
+    vector<float> scores((float*)out_mat.datastart, (float*)out_mat.dataend);
+
     // vector softmax
     scores = vectorSoftmax(scores);
 
