@@ -110,7 +110,7 @@ int main() {
     // dynamic batch requires explicit specification of batch
     int dynamic_batches = 4;
     if (dynamic_batch) {
-        model_path = "../../../../../models/shufflenet_v2_x0_5_dynamic_batch.engine";
+        model_path = "../../../../../models/shufflenet_v2_x0_5-dynamic_batch.engine";
     }
     else {
         model_path = "../../../../../models/shufflenet_v2_x0_5.engine";

@@ -72,7 +72,7 @@ int main() {
     string image_path = "../../../../../cat.jpg";
     string classes_name_path = "../../../../../imagenet_class_index.txt";
 
-    string model_path = "../../../../../models/shufflenet_v2_x0_5_dynamic_batch.onnx";
+    string model_path = "../../../../../models/shufflenet_v2_x0_5-dynamic_batch.onnx";
     int threads = 4;
     string device = "cuda";
     int gpu_mem_limit = 4;
