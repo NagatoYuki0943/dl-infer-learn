@@ -321,9 +321,10 @@ int main() {
     }
 
     // 析构顺序很重要
-    context->destroy();
-    engine->destroy();
-    trtRuntime->destroy();
+    // https://docs.nvidia.com/deeplearning/tensorrt/api/c_api/classnvinfer1_1_1_i_execution_context.html#ab3ace89a0eb08cd7e4b4cba7bedac5a2
+    delete context;
+    delete engine;
+    delete trtRuntime;
 
     return 0;
 }
