@@ -248,6 +248,8 @@ int main() {
         int totalSize = volume(dims) * getElementSize(dtype);
         bufferSize[i] = totalSize;
         cudaMalloc(&cudaBuffers[i], totalSize);
+        // enqueueV3 需要绑定tensor的name和address
+        context->setTensorAddress(name, cudaBuffers[i]);
 
         fprintf(stderr, "name: %s, mode: %d, dims: [%d, %d, %d, %d], totalSize: %d Byte\n", name, mode, dims.d[0], dims.d[1], dims.d[2], dims.d[3], totalSize);
         // name: images, mode : 1, dims : [8, 3, 224, 224] , totalSize : 4816896 Byte
