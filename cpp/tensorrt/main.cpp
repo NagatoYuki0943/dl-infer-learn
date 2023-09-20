@@ -165,6 +165,12 @@ int main() {
     }
     file.close();
 
+    int cudaCount;
+    cudaGetDeviceCount(&cudaCount);
+    // cuda set device
+    cudaSetDevice(0);
+    printf("cudaCount = %d, set device %d\n", cudaCount, 0);
+
     nvinfer1::IRuntime* trtRuntime = nvinfer1::createInferRuntime(sample::gLogger.getTRTLogger());
     initLibNvInferPlugins(&sample::gLogger, "");
     nvinfer1::ICudaEngine* engine = trtRuntime->deserializeCudaEngine(cached_engine.data(), cached_engine.size());
