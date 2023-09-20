@@ -282,6 +282,7 @@ int main() {
     //cudaStream_t stream;
     //cudaStreamCreate(&stream);
     //cudaMemcpyAsync(cudaBuffers[0], image.ptr<float>(), inLength, cudaMemcpyHostToDevice, stream);
+    // [enqueueV3 is slower than enqueueV2](https://github.com/NVIDIA/TensorRT/issues/2877) inculde the difference between enqueueV3 and enqueueV2.
     //// context->enqueueV2(cudaBuffers, stream, nullptr);
     //context->enqueueV3(stream);
     //cudaMemcpyAsync(scores.data(), cudaBuffers[1], outLength, cudaMemcpyDeviceToHost, stream);
