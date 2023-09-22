@@ -68,6 +68,8 @@ static int print_topk(const vector<float>& cls_scores, const vector<string>& cls
 *
 */
 int main() {
+    cout << cv::getVersionString() << endl; // 4.8.0
+
     string image_path = "../../../../../cat.jpg";
     string classes_name_path = "../../../../../imagenet_class_index.txt";
 

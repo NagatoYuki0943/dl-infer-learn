@@ -74,6 +74,8 @@ static int print_topk(const vector<float>& cls_scores, const vector<string>& cls
 * https://github.com/Tencent/ncnn/wiki/use-ncnn-with-alexnet.zh
 */
 int main() {
+    cout << NCNN_VERSION_STRING << endl;    // 1.0.20230816
+
     string image_path = "../../../../../cat.jpg";
     string classes_name_path = "../../../../../imagenet_class_index.txt";
 

@@ -97,6 +97,11 @@ static int print_topk(const vector<float>& cls_scores, const vector<string>& cls
 *
 */
 int main() {
+    cout << ov::get_openvino_version() << endl;
+    //OpenVINO Runtime
+    //    Version : 2023.1.0
+    //    Build : 2023.1.0 - 12185 - 9e6b00e51cd - releases / 2023 / 1
+
     string image_path = "../../../../../cat.jpg";
     string classes_name_path = "../../../../../imagenet_class_index.txt";
 

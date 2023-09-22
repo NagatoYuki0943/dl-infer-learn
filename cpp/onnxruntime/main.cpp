@@ -69,6 +69,8 @@ static int print_topk(const vector<float>& cls_scores, const vector<string>& cls
 * https://github.com/microsoft/onnxruntime-inference-examples/tree/main/c_cxx
 */
 int main() {
+    cout << "onnxruntime version: " << Ort::GetVersionString() << endl; // 1.16.0
+
     string image_path = "../../../../../cat.jpg";
     string classes_name_path = "../../../../../imagenet_class_index.txt";
 
