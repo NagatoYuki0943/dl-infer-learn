@@ -146,7 +146,7 @@ int main() {
         }
     }
     wchar_t* model_path1 = new wchar_t[model_path.size()];
-    swprintf(model_path1, 4096, L"%S", model_path.c_str());
+    swprintf(model_path1, model_path.size(), L"%S", model_path.c_str());
     // create session
     session = Ort::Session(env, model_path1, sessionOptions);
     /********************* load onnx *********************/
