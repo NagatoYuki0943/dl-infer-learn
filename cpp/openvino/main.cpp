@@ -105,7 +105,7 @@ int main() {
     string image_path = "../../../../../cat.jpg";
     string classes_name_path = "../../../../../imagenet_class_index.txt";
 
-    string model_path = "../../../../../models/shufflenet_v2_x0_5-dynamic_batch-half-openvino/shufflenet_v2_x0_5-dynamic_batch-half.xml";
+    string model_path = "../../../../../models/shufflenet_v2_x0_5-dynamic_batch-half-openvino/model.xml";
     string device = "CPU";              // CPU or GPU or GPU.0
     bool openvino_preprocess = true;    // 是否使用openvino图片预处理,使用dynamic shape必须要用openvino_preprocess
 
