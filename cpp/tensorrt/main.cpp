@@ -335,5 +335,10 @@ int main() {
     delete engine;
     delete trtRuntime;
 
+    // 销毁分配的gpu显存
+    for (auto buffer : cudaBuffers) {
+        cudaFree(buffer);
+    }
+
     return 0;
 }
