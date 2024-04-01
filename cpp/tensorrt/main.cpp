@@ -116,40 +116,9 @@ int main() {
         model_path = "../../../../../models/shufflenet_v2_x0_5.engine";
     }
 
-    cv::Mat image = cv::imread(image_path);
-    cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
-
-    /***************************** preprocess *****************************/
-    // resize
-    cv::resize(image, image, { 224, 224 });
-    // 转换为float并归一化
-    image.convertTo(image, CV_32FC3, 1.0f / 255.0f, 0);
-    // 标准化
-    cv::Scalar mean_scalar = cv::Scalar(0.485f, 0.456f, 0.406f);
-    cv::Scalar std_scalar = cv::Scalar(0.229f, 0.224f, 0.225f);
-    cv::subtract(image, mean_scalar, image);
-    cv::divide(image, std_scalar, image);
-    // [H, W, C] -> [N, C, H, W]
-
-    vector<cv::Mat> images;
-    cv::Mat blob;
-    if (dynamic_batch) {
-        // 初始化dynamic_batches张图片
-        images = vector<cv::Mat>(dynamic_batches, image);
-        blob = cv::dnn::blobFromImages(images);
-    }
-    else {
-        blob = cv::dnn::blobFromImage(image);
-    }
-
-
-    /***************************** preprocess *****************************/
-
-    /******************************* engine *******************************/
+    /******************** load engine ********************/
     // https://github.com/linghu8812/tensorrt_inference/
     // https://github.com/linghu8812/tensorrt_inference/blob/master/code/src/model.cpp
-
-    /******************** load engine ********************/
     string cached_engine;
     std::fstream file;
     std::cout << "loading filename from:" << model_path << std::endl;
@@ -178,7 +147,7 @@ int main() {
     std::cout << "deserialize done" << std::endl;
     /******************** load engine ********************/
 
-    /********************** binding **********************/
+    /******************** binding ********************/
     nvinfer1::IExecutionContext* context = engine->createExecutionContext();
     assert(context != nullptr);
 
@@ -255,11 +224,41 @@ int main() {
         // name: images, mode : 1, dims : [8, 3, 224, 224] , totalSize : 4816896 Byte
         // name : classes, mode : 2, dims : [8, 1000, 0, 0] , totalSize : 32000 Byte
     }
-    /********************** binding **********************/
     if (dynamic_batch)
         assert(dynamic_batches >= min_batches && dynamic_batches <= max_batches);
+    /******************** binding ********************/
 
-    /*********************** infer ***********************/
+    /******************** load image ********************/
+    cv::Mat image = cv::imread(image_path);
+    cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
+    /******************** load image ********************/
+
+    /******************** preprocess ********************/
+    // resize
+    cv::resize(image, image, { 224, 224 });
+    // 转换为float并归一化
+    image.convertTo(image, CV_32FC3, 1.0f / 255.0f, 0);
+    // 标准化
+    cv::Scalar mean_scalar = cv::Scalar(0.485f, 0.456f, 0.406f);
+    cv::Scalar std_scalar = cv::Scalar(0.229f, 0.224f, 0.225f);
+    cv::subtract(image, mean_scalar, image);
+    cv::divide(image, std_scalar, image);
+    // [H, W, C] -> [N, C, H, W]
+
+    vector<cv::Mat> images;
+    cv::Mat blob;
+    if (dynamic_batch) {
+        // 初始化dynamic_batches张图片
+        images = vector<cv::Mat>(dynamic_batches, image);
+        blob = cv::dnn::blobFromImages(images);
+    }
+    else {
+        blob = cv::dnn::blobFromImage(image);
+    }
+
+    /******************** preprocess ********************/
+
+    /******************** infer ********************/
     // float长度
     int inLength = bufferSize[0];
     int outLength = bufferSize[1];
@@ -288,14 +287,14 @@ int main() {
     //cudaMemcpyAsync(scores.data(), cudaBuffers[1], outLength, cudaMemcpyDeviceToHost, stream);
     //cudaStreamSynchronize(stream);
     ///****** async infer ******/
-    /*********************** infer ***********************/
-    /******************************* engine *******************************/
+    /******************** infer *********************/
 
-    /**************************** postprocess *****************************/
+    /******************** postprocess ********************/
     // vector softmax
     scores = vectorSoftmax(scores);
-    /**************************** postprocess *****************************/
+    /******************** postprocess ********************/
 
+    /******************** print ********************/
     // 单张图片结果的长度
     int batch1ResultLength = outNums;
     if (dynamic_batch) {
@@ -328,7 +327,9 @@ int main() {
         print_topk(batchScore, classes, 5);
         cout << endl;
     }
+    /******************** print ********************/
 
+    /******************** destroy ********************/
     // 析构顺序很重要
     // https://docs.nvidia.com/deeplearning/tensorrt/api/c_api/classnvinfer1_1_1_i_execution_context.html#ab3ace89a0eb08cd7e4b4cba7bedac5a2
     delete context;
@@ -339,6 +340,7 @@ int main() {
     for (auto buffer : cudaBuffers) {
         cudaFree(buffer);
     }
+    /******************** destroy ********************/
 
     return 0;
 }
