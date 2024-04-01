@@ -157,6 +157,7 @@ int main() {
     int nbBindings = engine->getNbBindings();
     assert(nbBindings == 2);
     vector<int> bufferSize(nbBindings);
+    vector<int> bufferElementSize(nbBindings);
     void* cudaBuffers[2];
     for (int i = 0; i < nbBindings; i++) {
         const char* name;
@@ -214,13 +215,16 @@ int main() {
             }
         }
 
-        int totalSize = volume(dims) * getElementSize(dtype);
+        int elementSize = getElementSize(dtype);
+        bufferElementSize[i] = elementSize;
+        int totalSize = volume(dims) * elementSize;
         bufferSize[i] = totalSize;
         cudaMalloc(&cudaBuffers[i], totalSize);
         // enqueueV3 需要绑定tensor的name和address
         context->setTensorAddress(name, cudaBuffers[i]);
 
-        fprintf(stderr, "name: %s, mode: %d, dims: [%d, %d, %d, %d], totalSize: %d Byte\n", name, mode, dims.d[0], dims.d[1], dims.d[2], dims.d[3], totalSize);
+        fprintf(stderr, "name: %s, mode: %d, dims: [%d, %d, %d, %d], elementSize: %d, totalSize: %d Byte\n",
+            name, mode, dims.d[0], dims.d[1], dims.d[2], dims.d[3], elementSize, totalSize);
         // name: images, mode : 1, dims : [8, 3, 224, 224] , totalSize : 4816896 Byte
         // name : classes, mode : 2, dims : [8, 1000, 0, 0] , totalSize : 32000 Byte
     }
@@ -262,11 +266,11 @@ int main() {
     // float长度
     int inLength = bufferSize[0];
     int outLength = bufferSize[1];
-    int outNums = int(bufferSize[1] / sizeof(float)); // sizeof(float) = 4 Byte = 32bit
+    int outNums = int(bufferSize[1] / bufferElementSize[1]); // 4 Byte = 32bit
     if (dynamic_batch) {
         inLength = int(bufferSize[0] / max_batches * images.size());
         outLength = int(bufferSize[1] / max_batches * images.size());
-        outNums = int(bufferSize[1] / max_batches * images.size() / sizeof(float));
+        outNums = int(bufferSize[1] / max_batches * images.size() / bufferElementSize[1]);
     }
     cout << "outNums: " << outNums << " nums" << endl;
 
