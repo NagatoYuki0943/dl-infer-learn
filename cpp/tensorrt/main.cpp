@@ -183,8 +183,8 @@ int main() {
     assert(context != nullptr);
 
     //get buffers
-    int min_batches;
-    int max_batches;
+    int min_batches = 1;
+    int max_batches = 1;
     int nbBindings = engine->getNbBindings();
     assert(nbBindings == 2);
     vector<int> bufferSize(nbBindings);
