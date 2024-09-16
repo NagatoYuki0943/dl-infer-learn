@@ -5,7 +5,9 @@ import cv2
 path = "../models/shufflenet_v2_x0_5.onnx"
 x = np.ones((1, 3, 224, 224), dtype=np.float32)
 
-ort_model: ort.InferenceSession = ort.InferenceSession(path, providers=["CPUExecutionProvider"])
+ort_model: ort.InferenceSession = ort.InferenceSession(
+    path, providers=["CPUExecutionProvider"]
+)
 y1: list[np.ndarray] = ort_model.run(None, {ort_model.get_inputs()[0].name: x})
 print(y1[0].shape)
 print(y1[0])

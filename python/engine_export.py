@@ -2,6 +2,7 @@
 
 https://github.com/ultralytics/ultralytics/blob/main/ultralytics/engine/exporter.py#L653
 """
+
 import onnx
 import tensorrt as trt
 from pathlib import Path
@@ -9,8 +10,8 @@ from pathlib import Path
 
 dynamic = True
 half = False
-workspace = 2            # TensorRT: workspace size (GB)
-shape = [8, 3, 224, 224] # max dynamic shape
+workspace = 2  # TensorRT: workspace size (GB)
+shape = [8, 3, 224, 224]  # max dynamic shape
 
 if dynamic:
     f_onnx = Path("../models/shufflenet_v2_x0_5-dynamic_batch.onnx")
@@ -23,7 +24,7 @@ f_engine = f_onnx.with_suffix(".engine")  # TensorRT engine file
 onnx_model = onnx.load(f_onnx)
 
 # create builder and network
-logger = trt.Logger(trt.Logger.INFO)    # INFO WARNING ERROR
+logger = trt.Logger(trt.Logger.INFO)  # INFO WARNING ERROR
 # logger.min_severity = trt.Logger.Severity.VERBOSE
 builder = trt.Builder(logger)
 config = builder.create_builder_config()
@@ -55,17 +56,23 @@ if dynamic:
         # IR 转换时，如果有多 Batch、多输入、动态 shape 的需求，都可以通过多次调用 set_shape 函数进行设置。
         # set_shape 函数接受的传参分别是：输入节点名称，可接受的最小输入尺寸，最优的输入尺寸，可接受的最大输入尺寸。
         # 一般要求这三个尺寸的大小关系为单调递增。
-        profile.set_shape(inp.name, (1, *shape[1:]), (max(1, shape[0] // 2), *shape[1:]), shape)
+        profile.set_shape(
+            inp.name, (1, *shape[1:]), (max(1, shape[0] // 2), *shape[1:]), shape
+        )
     config.add_optimization_profile(profile)
 
 # fp16 type
-print(f"building FP{16 if builder.platform_has_fast_fp16 and half else 32} engine as {f_engine}")
+print(
+    f"building FP{16 if builder.platform_has_fast_fp16 and half else 32} engine as {f_engine}"
+)
 if builder.platform_has_fast_fp16 and half:
     config.set_flag(trt.BuilderFlag.FP16)
 
 # Write file
 # with builder.build_engine(network, config) as engine, open(f_engine, "wb") as t:  # old
-with builder.build_serialized_network(network, config) as engine, open(f_engine, "wb") as t:
+with builder.build_serialized_network(network, config) as engine, open(
+    f_engine, "wb"
+) as t:
     # Model
     # t.write(engine.serialize())  # old
     t.write(engine)
